@@ -76,9 +76,9 @@ create table public.agent_runs (
 create table public.agent_run_steps (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
-  run_id uuid references public.agent_runs(id) on delete cascade,
+  run_id uuid not null references public.agent_runs(id) on delete cascade,
   tool_id uuid references public.tools(id) on delete set null,
-  step_number integer not null default 1,
+  step_order integer not null default 1,
   input text,
   output text,
   status text not null default 'success'

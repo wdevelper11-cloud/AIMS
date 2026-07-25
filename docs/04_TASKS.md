@@ -268,7 +268,8 @@
 - [ ] Log success, failure, and review-required runs; confirm each value and resolved `project_id` in Table Editor.
 - [ ] Confirm a default selection stores `risk_level = medium`, a high-risk selection stores `risk_level = high`, and the table renders each risk badge.
 - [ ] Attempt negative/fractional latency and negative cost; confirm client and database rejection.
-- [ ] Add an optional approved-tool step and verify its `project_id` matches the parent run’s workspace and stores canonical `step_number = 1` along with its `run_id`, `tool_id`, input/output, and status.
+- [ ] Add an optional approved-tool step and verify its `project_id` matches the parent run’s workspace and stores canonical `step_order = 1` along with its `run_id`, `tool_id`, input/output, and status.
+- [ ] Confirm optional step insertion produces no legacy `name`, `step_number`, or `project_id` NOT NULL errors after applying the Phase 9 patch.
 - [ ] Refresh without duplicating rows; verify logout protection and optional cross-user RLS isolation.
 - [ ] Confirm `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/login`, logout, topbar, and default-workspace behavior are unchanged.
 

@@ -73,13 +73,13 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
         project_id: projectId,
         run_id: run.id,
         tool_id: toolId,
-        step_number: 1,
+        step_order: 1,
         input: String(values.get("step_input") ?? "").trim() || null,
         output: String(values.get("step_output") ?? "").trim() || null,
         status: values.get("step_status") as AgentRunStatus,
       });
       if (stepError) {
-        refresh(`Run logged, but its optional tool step could not be added: ${stepError.message}`, "error");
+        refresh("Run logged, but optional tool step failed. Your Supabase Cloud agent_run_steps table may have old required columns. Run supabase/patches/phase9_agent_runs_patch.sql again.", "error");
         return;
       }
     }

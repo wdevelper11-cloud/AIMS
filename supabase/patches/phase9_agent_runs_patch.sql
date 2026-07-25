@@ -32,9 +32,9 @@ alter table public.agent_runs
 create table if not exists public.agent_run_steps (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
-  run_id uuid references public.agent_runs(id) on delete cascade,
+  run_id uuid not null references public.agent_runs(id) on delete cascade,
   tool_id uuid references public.tools(id) on delete set null,
-  step_number integer not null default 1,
+  step_order integer not null default 1,
   input text,
   output text,
   status text not null default 'success',
@@ -46,7 +46,7 @@ alter table public.agent_run_steps
   add column if not exists project_id uuid,
   add column if not exists run_id uuid,
   add column if not exists tool_id uuid,
-  add column if not exists step_number integer,
+  add column if not exists step_order integer,
   add column if not exists input text,
   add column if not exists output text,
   add column if not exists status text default 'success',
@@ -64,18 +64,32 @@ set project_id = r.project_id
 from public.agent_runs r
 where s.run_id = r.id and s.project_id is null;
 
--- Prefer a legacy step_order value when that column exists; otherwise assign 1.
+-- Backfill canonical step_order from legacy step_number when it exists.
 do $$
 begin
   if exists (
     select 1 from information_schema.columns
-    where table_schema = 'public' and table_name = 'agent_run_steps' and column_name = 'step_order'
+    where table_schema = 'public' and table_name = 'agent_run_steps' and column_name = 'step_number'
   ) then
-    execute 'update public.agent_run_steps set step_number = coalesce(step_number, step_order, 1) where step_number is null';
-    execute 'update public.agent_run_steps set step_order = step_number where step_order is null';
-    execute 'alter table public.agent_run_steps alter column step_order drop not null';
-  else
-    update public.agent_run_steps set step_number = 1 where step_number is null;
+    execute 'update public.agent_run_steps set step_order = step_number where step_order is null and step_number is not null';
+    execute 'update public.agent_run_steps set step_number = 1 where step_number is null';
+    execute 'alter table public.agent_run_steps alter column step_number set default 1';
+    execute 'alter table public.agent_run_steps alter column step_number drop not null';
+  end if;
+end $$;
+
+update public.agent_run_steps set step_order = 1 where step_order is null;
+
+-- A legacy name column is metadata only and must not block canonical inserts.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'agent_run_steps' and column_name = 'name'
+  ) then
+    execute 'update public.agent_run_steps set name = ''Manual tool step'' where name is null';
+    execute 'alter table public.agent_run_steps alter column name set default ''Manual tool step''';
+    execute 'alter table public.agent_run_steps alter column name drop not null';
   end if;
 end $$;
 
@@ -92,8 +106,8 @@ alter table public.agent_runs
 
 alter table public.agent_run_steps
   alter column id set default gen_random_uuid(),
-  alter column step_number set default 1,
-  alter column step_number set not null,
+  alter column step_order set default 1,
+  alter column step_order set not null,
   alter column status set default 'success',
   alter column status set not null,
   alter column created_at set default now();
@@ -106,6 +120,15 @@ begin
     alter table public.agent_run_steps alter column project_id set not null;
   else
     raise notice 'agent_run_steps contains orphan rows with null project_id; repair their run_id/project_id before setting NOT NULL.';
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (select 1 from public.agent_run_steps where run_id is null) then
+    alter table public.agent_run_steps alter column run_id set not null;
+  else
+    raise notice 'agent_run_steps contains rows with null run_id; repair those legacy rows before setting NOT NULL.';
   end if;
 end $$;
 
@@ -145,8 +168,9 @@ begin
   if not exists (select 1 from pg_constraint where conrelid = 'public.agent_run_steps'::regclass and conname = 'agent_run_steps_tool_id_fkey') then
     alter table public.agent_run_steps add constraint agent_run_steps_tool_id_fkey foreign key (tool_id) references public.tools(id) on delete set null not valid;
   end if;
-  alter table public.agent_run_steps drop constraint if exists agent_run_steps_status_check;
-  alter table public.agent_run_steps add constraint agent_run_steps_status_check check (status in ('success', 'failed', 'needs_review')) not valid;
+  if not exists (select 1 from pg_constraint where conrelid = 'public.agent_run_steps'::regclass and conname = 'agent_run_steps_status_check') then
+    alter table public.agent_run_steps add constraint agent_run_steps_status_check check (status in ('success', 'failed', 'needs_review')) not valid;
+  end if;
 end $$;
 
 create index if not exists agent_runs_project_id_idx on public.agent_runs(project_id);
@@ -219,7 +243,7 @@ commit;
 
 -- Inspect recent steps and their direct project ownership:
 -- select s.id, s.project_id, p.name as project_name, s.run_id, s.tool_id,
---   t.name as tool_name, s.step_number, s.status, s.created_at
+--   t.name as tool_name, s.step_order, s.status, s.created_at
 -- from public.agent_run_steps s
 -- join public.projects p on p.id = s.project_id
 -- left join public.tools t on t.id = s.tool_id
