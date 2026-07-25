@@ -15,6 +15,7 @@ create table public.projects (
   owner_id uuid references auth.users(id) on delete cascade,
   name text not null,
   description text,
+  is_default boolean not null default true,
   created_at timestamptz default now()
 );
 
@@ -81,6 +82,9 @@ create table public.agent_run_steps (
 
 -- PostgreSQL does not automatically index referencing foreign-key columns.
 create index projects_owner_id_idx on public.projects(owner_id);
+create unique index projects_one_default_per_owner_idx on public.projects(owner_id)
+  where is_default = true;
+create index projects_owner_default_idx on public.projects(owner_id, is_default);
 create index agents_project_id_idx on public.agents(project_id);
 create index tools_project_id_idx on public.tools(project_id);
 create index knowledge_sources_project_id_idx on public.knowledge_sources(project_id);

@@ -31,7 +31,7 @@ Supabase Cloud owns:
 
 - Email/password identities in `auth.users`
 - User-facing identity data in `public.profiles`
-- Default workspace creation through an auth trigger
+- Default workspace creation through protected server-side resolution
 - Project-owned tables for agents, tools, knowledge sources, runs, and run steps
 - RLS policies that isolate each owner's projects
 - A guarded database function that inserts demo data for the current user's project
@@ -40,7 +40,7 @@ Supabase Cloud owns:
 
 1. The user signs up with email and password through Supabase Auth.
 2. Supabase creates a row in `auth.users`.
-3. A database trigger creates the user's `profiles` row and default `projects` row.
+3. On the first protected request, the server layout uses the authenticated RLS session to create any missing `profiles` and default `projects` rows.
 4. Supabase returns a session stored in secure auth cookies.
 5. Next.js middleware refreshes the session and redirects unauthenticated users away from protected routes.
 6. Sign-out clears the session and returns the user to `/login`.
