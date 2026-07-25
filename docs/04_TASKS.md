@@ -275,7 +275,7 @@
 
 **Commit:** `feat: implement agent execution logging`
 
-## Phase 10 — Dashboard metrics
+## Phase 10 — Dashboard metrics ✅ Implemented
 
 **Goal:** Summarize agent operations from real project records.
 
@@ -283,15 +283,20 @@
 
 **Acceptance criteria:**
 
-- Display total/active agents, total/failed runs, average latency, total estimated cost, high-risk agents, and approved tools.
-- Empty datasets return zero rather than errors.
-- Values update after relevant records change.
+- [x] Display live total/active agents, total/failed runs, average latency, estimated cost, high-risk agents, approved tools, and knowledge sources.
+- [x] Every dashboard query explicitly filters by the resolved default `project_id` and remains protected by RLS.
+- [x] Display the newest five live runs with agent, status, risk, latency, cost, and timestamp.
+- [x] Empty datasets return zero cards and a recent-runs empty state; query errors show no demo fallback.
+- [x] The Phase 10 patch aligns metric dependencies, defaults, constraints, indexes, and RLS without deleting or seeding data.
 
 **Manual test checklist:**
 
-- Compare every card with manual database counts.
-- Add a failed run and confirm totals update.
-- Verify cost formatting and average-latency units.
+- [ ] Run `supabase/patches/phase10_dashboard_metrics_patch.sql` in Supabase Cloud SQL Editor.
+- [ ] Compare every card with project-scoped SQL counts, average latency, and summed cost.
+- [ ] Confirm recent runs shows at most the newest five project rows in correct order.
+- [ ] Add a run, change agent status/risk, and toggle approval; verify affected dashboard values update.
+- [ ] Confirm an empty workspace shows zeros, logout protects `/dashboard`, and a second user sees only their workspace.
+- [ ] Confirm Agents, Tools, Knowledge, Runs, and optional tool-step logging remain operational.
 
 **Commit:** `feat: add agent operations metrics`
 

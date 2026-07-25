@@ -14,7 +14,7 @@ AIMS provides a project-scoped operational workspace for agent inventory, govern
 
 - Product landing and working email/password login/signup experience
 - Shared responsive SaaS dashboard shell and navigation
-- Eight operational metric cards
+- Live project-scoped operational metric cards and recent-run history
 - Live agent registry with create, status update, and delete operations
 - Live governed tool registry with create, approval, risk, and delete operations
 - Live knowledge-source governance registry with create, status update, and delete operations
@@ -39,7 +39,7 @@ No custom API server, ORM, local Supabase stack, AI runtime, or vector database 
 
 Next.js is the application and presentation layer. Supabase Cloud is the only planned backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
 
-Authentication and the agent, tool, knowledge-source, and run registries are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. Other operational pages and dashboard metrics still use `lib/demo-data.ts` and remain deferred to later phases.
+Authentication and the agent, tool, knowledge-source, and run registries are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. The audit page remains on `lib/demo-data.ts` and is deferred to a later phase.
 
 ## Routes
 
@@ -47,7 +47,7 @@ Authentication and the agent, tool, knowledge-source, and run registries are con
 |---|---|---|
 | `/` | Product landing page | Static |
 | `/login` | Email/password login and signup | Public; redirects authenticated users |
-| `/dashboard` | Fleet health and recent runs | Protected; static demo data |
+| `/dashboard` | Fleet health and recent runs | Protected; live Supabase metrics scoped to the default workspace |
 | `/agents` | Agent registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/tools` | Governed tool registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/knowledge` | Knowledge-source governance registry | Protected; live Supabase CRUD scoped to the default workspace |
@@ -82,6 +82,10 @@ If an existing Cloud project rejects a source type or still stores friendly labe
 ### Phase 9 Existing Supabase Cloud Alignment
 
 After pulling Phase 9—and before using the live Run Logger on an existing hosted project—run `supabase/patches/phase9_agent_runs_patch.sql` once in the Supabase Cloud **SQL Editor**. The non-destructive patch aligns `agent_runs` and `agent_run_steps` columns, defaults, constraints, indexes, RLS, and strict authenticated-owner policies without deleting or seeding data. It adds and backfills run `risk_level`, defaults it to `medium`, and restricts it to `low`, `medium`, or `high`. It also repairs legacy `agent_run_steps.name` and `agent_run_steps.step_number` requirements without deleting data, while standardizing the application on canonical `step_order` with a default of `1`.
+
+### Phase 10 Existing Supabase Cloud Alignment
+
+Run `supabase/patches/phase10_dashboard_metrics_patch.sql` once in the hosted **SQL Editor** before using live dashboard metrics on an existing project. The non-destructive patch aligns metric columns and safe defaults, adds project/status indexes, and keeps RLS enabled without adding policies or seed data.
 
 ## Environment variables
 
@@ -185,14 +189,27 @@ Manual validation against Supabase Cloud:
 7. Refresh and confirm rows are not duplicated. Sign out and confirm `/runs` redirects to `/login`.
 8. Optionally sign in as test user B and confirm user A’s runs and steps are not visible.
 
+## Live Dashboard Metrics (Phase 10)
+
+`/dashboard` calculates workspace observability directly from authenticated, project-scoped Supabase rows. It shows total and active agents, total and failed runs, average latency, summed estimated cost, high-risk agents, approved tools, registered knowledge sources, and the five most recent runs. Empty workspaces render zero-valued cards and a professional recent-runs empty state; query failures never fall back to demo data.
+
+Manual validation against Supabase Cloud:
+
+1. Run `supabase/patches/phase10_dashboard_metrics_patch.sql` in the hosted SQL Editor.
+2. Sign in as test user A and ensure the workspace has an agent, approved tool, knowledge source, and logged run.
+3. Open `/dashboard` and compare every card with project-filtered Table Editor or SQL counts. Verify average latency and total estimated cost.
+4. Confirm Recent runs contains at most the newest five rows with agent, status, risk, latency, cost, and timestamp.
+5. Add a run, change an agent risk/status, and toggle tool approval; revisit `/dashboard` and confirm the affected values update.
+6. Sign out and confirm `/dashboard` redirects to `/login`. Optionally verify a second user sees only their workspace metrics.
+
 ## Current status
 
-This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD, and Phase 8 project-scoped knowledge-source governance CRUD, and Phase 9 manual agent-run persistence. Audit history and dashboard metrics remain deterministic demo data. No real AI APIs are called.
+This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD, and Phase 8 project-scoped knowledge-source governance CRUD, and Phase 9 manual agent-run persistence, and Phase 10 live project-scoped dashboard metrics. Audit history remains deterministic demo data. No real AI APIs are called.
 
 ## Next implementation phases
 
-1. Replace demo dashboard metrics with project-scoped queries.
-2. Replace demo audit events with a project-scoped timeline.
-3. Verify RLS isolation with separate test users, then deploy to Vercel.
+1. Replace demo audit events with a project-scoped timeline.
+2. Verify RLS isolation with separate test users.
+3. Deploy the verified application to Vercel.
 
 See the command center documents in `docs/` for the product boundary, architecture, schema rationale, phased plan, and verified resume narrative.

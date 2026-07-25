@@ -122,3 +122,26 @@ export interface DashboardMetric {
   value: string;
   detail: string;
 }
+
+export interface DashboardMetrics {
+  totalAgents: number;
+  activeAgents: number;
+  totalRuns: number;
+  failedRuns: number;
+  averageLatencyMs: number;
+  estimatedCostUsd: number;
+  highRiskAgents: number;
+  approvedTools: number;
+  knowledgeSources: number;
+}
+
+export interface DashboardRecentRun {
+  id: string;
+  agentName: string;
+  task: string;
+  status: AgentRunStatus;
+  riskLevel: RiskLevel;
+  latencyMs: number;
+  costUsd: number;
+  createdAt: string;
+}
