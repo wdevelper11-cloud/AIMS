@@ -26,6 +26,8 @@ The `agent_runs` table stores a project and optional agent reference with requir
 
 The live dashboard depends on project, status, risk, approval, latency, cost, agent reference, and timestamp columns across `agents`, `tools`, `knowledge_sources`, and `agent_runs`. `supabase/patches/phase10_dashboard_metrics_patch.sql` aligns these fields and defaults for existing Cloud projects, creates direct and compound project/status indexes, and keeps RLS enabled without deleting or seeding records.
 
+The Phase 11 audit timeline introduces no new audit table. It reads creation metadata from the five existing operational tables, filters each query by `project_id`, and merges the results in the application. `supabase/patches/phase11_audit_timeline_patch.sql` aligns the required columns and adds `(project_id, created_at desc)` indexes for chronological reads while preserving RLS and existing data.
+
 The application queries the project owned by the authenticated user where `is_default = true` and creates it only when none exists. `projects_one_default_per_owner_idx` is a partial unique index on `owner_id` for default rows, so the database prevents two default workspaces for one owner while preserving non-default historical rows. `projects_owner_default_idx` supports the resolution query. No auth trigger or service-role client is required.
 
 ## Existing Supabase Cloud project patch

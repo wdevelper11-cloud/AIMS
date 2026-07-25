@@ -93,12 +93,17 @@ create unique index projects_one_default_per_owner_idx on public.projects(owner_
 create index projects_owner_default_idx on public.projects(owner_id, is_default);
 create index agents_project_id_idx on public.agents(project_id);
 create index agents_project_status_idx on public.agents(project_id, status);
+create index agents_project_created_at_idx on public.agents(project_id, created_at desc);
 create index tools_project_id_idx on public.tools(project_id);
+create index tools_project_created_at_idx on public.tools(project_id, created_at desc);
 create index knowledge_sources_project_id_idx on public.knowledge_sources(project_id);
+create index knowledge_sources_project_created_at_idx on public.knowledge_sources(project_id, created_at desc);
 create index agent_runs_project_id_idx on public.agent_runs(project_id);
 create index agent_runs_agent_id_idx on public.agent_runs(agent_id);
 create index agent_runs_project_status_idx on public.agent_runs(project_id, status);
+create index agent_runs_project_created_at_idx on public.agent_runs(project_id, created_at desc);
 create index if not exists agent_run_steps_project_id_idx on public.agent_run_steps(project_id);
+create index agent_run_steps_project_created_at_idx on public.agent_run_steps(project_id, created_at desc);
 create index if not exists agent_run_steps_run_id_idx on public.agent_run_steps(run_id);
 create index if not exists agent_run_steps_tool_id_idx on public.agent_run_steps(tool_id);
 

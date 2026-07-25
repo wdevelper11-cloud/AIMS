@@ -145,3 +145,17 @@ export interface DashboardRecentRun {
   costUsd: number;
   createdAt: string;
 }
+
+export type AuditEventType = "agent_registered" | "tool_registered" | "knowledge_source_registered" | "agent_run_logged" | "tool_step_logged";
+
+export interface AuditEvent {
+  id: string;
+  type: AuditEventType;
+  label: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  status?: string;
+  riskLevel?: RiskLevel;
+  metadata: string[];
+}

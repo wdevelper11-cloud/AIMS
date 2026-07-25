@@ -300,7 +300,7 @@
 
 **Commit:** `feat: add agent operations metrics`
 
-## Phase 11 — Audit timeline
+## Phase 11 — Audit timeline ✅ Implemented
 
 **Goal:** Provide a chronological view of operational events.
 
@@ -308,15 +308,20 @@
 
 **Acceptance criteria:**
 
-- Newest runs appear first.
-- Each event shows agent, task, status, timestamp, latency, cost, and run-time risk.
-- Each event links to run details.
+- [x] Derive events from agents, tools, knowledge sources, runs, and run steps without creating an `audit_events` table.
+- [x] Scope every query to the resolved default project, combine in TypeScript, sort newest first, and limit to 50.
+- [x] Show event title, description, timestamp, status, risk, and relevant metadata in a responsive timeline.
+- [x] Show explicit empty and query-error states without demo fallback.
+- [x] The Phase 11 patch aligns timeline dependencies and chronological indexes while preserving RLS and data.
 
 **Manual test checklist:**
 
-- Add runs at different times and verify ordering.
-- Confirm all required fields are readable on mobile.
-- Open an event and inspect its steps.
+- [ ] Run `supabase/patches/phase11_audit_timeline_patch.sql` in Supabase Cloud SQL Editor.
+- [ ] Confirm all five event types appear and are ordered newest first.
+- [ ] Create an agent and log a run with a tool step; confirm new timeline events appear.
+- [ ] Confirm an empty workspace shows the audit empty state and query failures show the live error state.
+- [ ] Verify logout protection and optional cross-user RLS isolation.
+- [ ] Confirm Dashboard, Agents, Tools, Knowledge, Runs, and optional tool-step logging remain operational.
 
 **Commit:** `feat: add agent run audit timeline`
 

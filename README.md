@@ -19,7 +19,7 @@ AIMS provides a project-scoped operational workspace for agent inventory, govern
 - Live governed tool registry with create, approval, risk, and delete operations
 - Live knowledge-source governance registry with create, status update, and delete operations
 - Live manual agent-run logger with status, latency, estimated cost, output, and optional tool-step persistence
-- Chronological audit timeline with status, risk, cost, and latency
+- Live chronological audit timeline derived from project-scoped operational records
 - Supabase Cloud cookie-backed browser/server auth clients
 - Protected application routes, persistent sessions, and logout
 - Automatic RLS-safe profile and default workspace resolution
@@ -39,7 +39,7 @@ No custom API server, ORM, local Supabase stack, AI runtime, or vector database 
 
 Next.js is the application and presentation layer. Supabase Cloud is the only planned backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
 
-Authentication and the agent, tool, knowledge-source, and run registries are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. The audit page remains on `lib/demo-data.ts` and is deferred to a later phase.
+Authentication and the agent, tool, knowledge-source, and run registries are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. The dashboard and audit timeline also read these same project-owned tables through the authenticated RLS session.
 
 ## Routes
 
@@ -52,7 +52,7 @@ Authentication and the agent, tool, knowledge-source, and run registries are con
 | `/tools` | Governed tool registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/knowledge` | Knowledge-source governance registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/runs` | Manual execution logger | Protected; live Supabase persistence scoped to the default workspace |
-| `/audit` | Chronological audit history | Protected; static demo data |
+| `/audit` | Derived operational audit timeline | Protected; live Supabase data scoped to the default workspace |
 
 ## Supabase Cloud Setup
 
@@ -86,6 +86,10 @@ After pulling Phase 9—and before using the live Run Logger on an existing host
 ### Phase 10 Existing Supabase Cloud Alignment
 
 Run `supabase/patches/phase10_dashboard_metrics_patch.sql` once in the hosted **SQL Editor** before using live dashboard metrics on an existing project. The non-destructive patch aligns metric columns and safe defaults, adds project/status indexes, and keeps RLS enabled without adding policies or seed data.
+
+### Phase 11 Existing Supabase Cloud Alignment
+
+Run `supabase/patches/phase11_audit_timeline_patch.sql` once in the hosted **SQL Editor** before using the live timeline on an existing project. It aligns current operational-table columns and chronological indexes while keeping RLS enabled. It creates no `audit_events` table, users, policies, or seed rows.
 
 ## Environment variables
 
@@ -202,14 +206,26 @@ Manual validation against Supabase Cloud:
 5. Add a run, change an agent risk/status, and toggle tool approval; revisit `/dashboard` and confirm the affected values update.
 6. Sign out and confirm `/dashboard` redirects to `/login`. Optionally verify a second user sees only their workspace metrics.
 
+## Live Audit Timeline (Phase 11)
+
+`/audit` derives a read-only operational timeline from the existing `agents`, `tools`, `knowledge_sources`, `agent_runs`, and `agent_run_steps` tables. Every source query is filtered to the resolved default project, events are combined in TypeScript, sorted newest first, and limited to 50. This is an MVP activity view—not an immutable, append-only enterprise audit log.
+
+Manual validation against Supabase Cloud:
+
+1. Run `supabase/patches/phase11_audit_timeline_patch.sql` in the hosted SQL Editor.
+2. Sign in as test user A and ensure the workspace has an agent, tool, knowledge source, run, and tool step.
+3. Open `/audit`; confirm all five event types appear newest first with the expected status, risk, latency/cost, source type, approval, and step metadata.
+4. Create an agent, then log a run with a tool step; return to `/audit` and confirm the new events appear.
+5. Sign out and confirm `/audit` redirects to `/login`. Optionally verify user B sees only their workspace events.
+
 ## Current status
 
-This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD, and Phase 8 project-scoped knowledge-source governance CRUD, and Phase 9 manual agent-run persistence, and Phase 10 live project-scoped dashboard metrics. Audit history remains deterministic demo data. No real AI APIs are called.
+This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD, and Phase 8 project-scoped knowledge-source governance CRUD, and Phase 9 manual agent-run persistence, and Phase 10 live project-scoped dashboard metrics, and Phase 11 live derived operational audit timeline. No real AI APIs are called.
 
 ## Next implementation phases
 
-1. Replace demo audit events with a project-scoped timeline.
-2. Verify RLS isolation with separate test users.
+1. Verify RLS isolation with separate test users.
+2. Add optional secure demo-data tooling if still useful.
 3. Deploy the verified application to Vercel.
 
 See the command center documents in `docs/` for the product boundary, architecture, schema rationale, phased plan, and verified resume narrative.

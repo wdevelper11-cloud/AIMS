@@ -52,6 +52,7 @@ Use the strongest three bullets that match the role and only claim features that
 - Project-scoped knowledge-source governance CRUD through Supabase Cloud with explicit query scoping and RLS ownership enforcement
 - Project-scoped manual agent execution logging with status, execution-risk snapshots, latency, estimated-cost, output, and optional tool-step observability under Supabase RLS
 - Live project-scoped dashboard observability for agent inventory, failures, run volume, latency, estimated cost, risk, and tool approval
+- Derived a live, chronological, project-isolated operational audit timeline across agent, tool, knowledge, run, and step activity
 
 ## Demo explanation
 
