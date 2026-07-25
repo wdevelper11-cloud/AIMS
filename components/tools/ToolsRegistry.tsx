@@ -48,24 +48,11 @@ export function ToolsRegistry({ initialTools, projectId }: { initialTools: Datab
     refresh("Tool registered successfully.");
   }
 
-  async function updateApproval(tool: DatabaseTool) {
+  async function updateApproval(tool: DatabaseTool, isApproved: boolean) {
     setFeedback(null);
-    const isApproved = !tool.is_approved;
-    const { data, error } = await createBrowserClient()
-      .from("tools")
-      .update({ is_approved: isApproved })
-      .eq("id", tool.id)
-      .eq("project_id", projectId)
-      .select("is_approved")
-      .maybeSingle();
-
-    if (error) {
-      setFeedback({ tone: "error", message: `Approval could not be updated: ${error.message}` });
-    } else if (!data || data.is_approved !== isApproved) {
-      setFeedback({ tone: "error", message: "Approval could not be updated for this workspace." });
-    } else {
-      refresh(`Tool ${isApproved ? "approved" : "unapproved"}.`);
-    }
+    const { error } = await createBrowserClient().from("tools").update({ is_approved: isApproved }).eq("id", tool.id).eq("project_id", projectId);
+    if (error) setFeedback({ tone: "error", message: `Approval could not be updated: ${error.message}` });
+    else refresh("Tool approval updated.");
   }
 
   async function updateRisk(tool: DatabaseTool, riskLevel: RiskLevel) {
@@ -89,7 +76,7 @@ export function ToolsRegistry({ initialTools, projectId }: { initialTools: Datab
     {feedback && <p role="status" className={`rounded-lg border px-4 py-3 text-sm ${feedback.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>{feedback.message}</p>}
     {initialTools.length === 0 ? <EmptyState title="No tools registered yet." description="Register your first tool." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Tool name</th><th>Category</th><th>Approval status</th><th>Risk level</th><th>Actions</th></tr></thead><tbody>{initialTools.map((tool) => <tr key={tool.id}>
       <td className="font-semibold !text-slate-900">{tool.name}</td><td>{tool.category || "—"}</td>
-      <td><div className="space-y-2"><Badge value={tool.is_approved ? "approved" : "unapproved"} /><button type="button" aria-label={`Mark ${tool.name} as ${tool.is_approved ? "unapproved" : "approved"}`} disabled={isPending} onClick={() => updateApproval(tool)} className="block rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{tool.is_approved ? "Mark unapproved" : "Approve"}</button></div></td>
+      <td><div className="space-y-2"><Badge value={tool.is_approved ? "approved" : "unapproved"} /><select aria-label={`Approval for ${tool.name}`} value={String(tool.is_approved)} disabled={isPending} onChange={(event) => updateApproval(tool, event.target.value === "true")} className="block rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"><option value="true">Approved</option><option value="false">Unapproved</option></select></div></td>
       <td><div className="space-y-2"><Badge value={tool.risk_level} /><select aria-label={`Risk level for ${tool.name}`} value={tool.risk_level} disabled={isPending} onChange={(event) => updateRisk(tool, event.target.value as RiskLevel)} className="block rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div></td>
       <td><button type="button" disabled={isPending} onClick={() => deleteTool(tool)} className="text-sm font-semibold text-red-600 hover:text-red-500 disabled:opacity-50">Delete</button></td>
     </tr>)}</tbody></table></div>}
