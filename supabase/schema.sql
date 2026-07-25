@@ -33,15 +33,15 @@ create table public.agents (
   created_at timestamptz default now()
 );
 
-create table public.tools (
+create table if not exists public.tools (
   id uuid primary key default gen_random_uuid(),
   project_id uuid references public.projects(id) on delete cascade,
   name text not null,
   category text,
   is_approved boolean default true,
-  risk_level text not null default 'medium'
-    constraint tools_risk_level_check check (risk_level in ('low', 'medium', 'high')),
-  created_at timestamptz default now()
+  risk_level text not null default 'medium',
+  created_at timestamptz default now(),
+  constraint tools_risk_level_check check (risk_level in ('low', 'medium', 'high'))
 );
 
 create table public.knowledge_sources (

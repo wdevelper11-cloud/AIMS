@@ -66,6 +66,12 @@ Never put a Supabase service-role key in `.env.local` or frontend code. It bypas
 
 The schema is available both as executable SQL in `supabase/schema.sql` and as an explained reference in `docs/03_DATABASE_SCHEMA.md`.
 
+### Phase 7 Existing Supabase Cloud Repair
+
+Existing Cloud projects may have an older `tools` table that predates the live Tool Registry. If `/tools` reports a missing Tool Registry column, open the hosted project's **SQL Editor** and run `supabase/patches/phase7_tools_registry_patch.sql` once. The patch adds missing `tools.is_approved`, `tools.category`, `tools.risk_level`, and `tools.created_at` columns, restores their defaults and risk constraint, ensures the project index exists, and keeps RLS enabled.
+
+The patch is safe and non-destructive: it uses conditional column, constraint, and index creation; normalizes only null approval/risk values; and never deletes tool rows or introduces anonymous policies. Refresh `/tools` after the SQL completes.
+
 ## Environment variables
 
 ```bash

@@ -204,6 +204,14 @@
 - [ ] Sign out and confirm `/tools` redirects to `/login`.
 - [ ] Sign in as user B and confirm user A's records are isolated by RLS.
 
+**Schema-alignment validation:**
+
+- [ ] For an existing Cloud project with missing Tool Registry fields, run `supabase/patches/phase7_tools_registry_patch.sql` once in Supabase SQL Editor.
+- [ ] Confirm `tools.is_approved`, `tools.category`, `tools.risk_level`, and `tools.created_at` exist with the documented defaults.
+- [ ] Confirm `tools_risk_level_check`, `tools_project_id_idx`, and RLS remain enabled without anonymous or unconditional policies.
+- [ ] Refresh `/tools` and confirm the schema guidance is replaced by the live registry.
+- [ ] Confirm pre-existing tool rows remain present and null approval/risk values were normalized without deleting data.
+
 **Commit:** `feat: add governed tool registry`
 
 ## Phase 8 — Knowledge source registry
