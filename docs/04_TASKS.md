@@ -70,22 +70,27 @@
 
 ## Phase 3 — Supabase schema and RLS
 
+**Status:** Completed — Supabase Cloud schema and static RLS review are ready; the two-user isolation test remains a manual check in the target Cloud project.
+
 **Goal:** Create the relational model and database authorization boundary.
 
-**Files likely touched:** `docs/03_DATABASE_SCHEMA.md`, `types/database.ts`, `lib/supabase/client.ts`, `lib/supabase/server.ts`
+**Files touched:** `supabase/schema.sql`, `docs/03_DATABASE_SCHEMA.md`, `docs/04_TASKS.md`, `README.md`
 
 **Acceptance criteria:**
 
 - The SQL runs in Supabase Cloud without errors.
-- All tables, constraints, indexes, triggers, and policies exist.
-- Generated TypeScript database types compile.
-- Cross-project agent/run references are rejected.
+- All seven required tables, controlled-value constraints, foreign-key indexes, and policies exist.
+- RLS is enabled on all seven tables and policies are restricted to authenticated owners.
+- No local Supabase dependency, seed user, auth UI, CRUD implementation, or service-role credential was added.
 
 **Manual test checklist:**
 
-- Inspect every table in Supabase Table Editor.
-- Confirm RLS is enabled on all public tables.
-- As user A, attempt to select and insert using user B's project ID; both fail.
+- [ ] Run `supabase/schema.sql` once in a new Supabase Cloud project's SQL Editor without errors.
+- [ ] Inspect all seven tables, foreign keys, indexes, and check constraints in Supabase.
+- [ ] Confirm RLS is enabled and four authenticated policies exist on every public table.
+- [ ] As user A, create a profile, project, direct child records, a run, and a run step.
+- [ ] As user B, confirm user A's records are invisible and writes using A's project/run IDs fail.
+- [ ] Confirm an anonymous session cannot access rows and no service-role key is present in the client.
 
 **Commit:** `feat: add project scoped supabase schema and rls`
 
