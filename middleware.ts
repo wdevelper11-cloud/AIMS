@@ -7,14 +7,8 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const isProtected = protectedRoutes.some(
-    (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(`${route}/`),
-  );
 
   if (!url || !anonKey) {
-    if (isProtected) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
     return response;
   }
 
@@ -42,18 +36,16 @@ export async function middleware(request: NextRequest) {
   });
 
   const { data: { user } } = await supabase.auth.getUser();
-  function redirectWithCookies(pathname: string) {
-    const redirectResponse = NextResponse.redirect(new URL(pathname, request.url));
-    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
-    return redirectResponse;
-  }
+  const isProtected = protectedRoutes.some(
+    (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(`${route}/`),
+  );
 
   if (!user && isProtected) {
-    return redirectWithCookies("/login");
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   if (user && request.nextUrl.pathname === "/login") {
-    return redirectWithCookies("/dashboard");
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return response;

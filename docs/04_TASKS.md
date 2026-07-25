@@ -109,8 +109,6 @@
 - [x] Auth errors, success feedback, and loading states are visible.
 - [x] The authenticated user's email is displayed in the application shell.
 - [x] Only the Supabase project URL and public anon/publishable key are used.
-- [x] Middleware and a server-side protected layout both enforce authentication.
-- [x] Missing authentication configuration fails closed for protected pages.
 
 **Manual test checklist:**
 

@@ -90,7 +90,7 @@ Then open `http://localhost:3000`. Production deployment can use Vercel with the
 5. While signed in, open `/login` and confirm it redirects to `/dashboard`.
 6. Select **Sign out**, then open `/dashboard` or another application route and confirm it redirects to `/login`.
 
-Middleware protects `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/runs`, and `/audit` and refreshes valid Supabase sessions. A protected App Router layout independently verifies the user before rendering the application shell, so these pages remain private even if middleware is bypassed. Missing Supabase configuration fails closed: protected pages redirect to `/login` instead of rendering publicly. Authentication uses only the project URL and public anon/publishable key; authorization of future database queries remains enforced by RLS.
+Middleware protects `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/runs`, and `/audit`. It also refreshes valid Supabase sessions. Authentication uses only the project URL and public anon/publishable key; authorization of future database queries remains enforced by RLS.
 
 ## Current status
 
