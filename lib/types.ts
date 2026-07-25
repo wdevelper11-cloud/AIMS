@@ -52,12 +52,22 @@ export interface KnowledgeSource {
 }
 
 export type KnowledgeSourceStatus = "active" | "inactive";
+export type KnowledgeSourceType =
+  | "website"
+  | "pdf"
+  | "notion"
+  | "google_drive"
+  | "internal_docs"
+  | "api_docs"
+  | "database"
+  | "slack"
+  | "github_repo";
 
 export interface DatabaseKnowledgeSource {
   id: string;
   project_id: string;
   title: string;
-  source_type: string | null;
+  source_type: KnowledgeSourceType | null;
   url: string | null;
   status: KnowledgeSourceStatus;
   created_at: string;

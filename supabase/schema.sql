@@ -48,7 +48,8 @@ create table public.knowledge_sources (
   id uuid primary key default gen_random_uuid(),
   project_id uuid references public.projects(id) on delete cascade,
   title text not null,
-  source_type text,
+  source_type text default 'website'
+    constraint knowledge_sources_source_type_check check (source_type in ('website', 'pdf', 'notion', 'google_drive', 'internal_docs', 'api_docs', 'database', 'slack', 'github_repo')),
   url text,
   status text not null default 'active'
     constraint knowledge_sources_status_check check (status in ('active', 'inactive')),

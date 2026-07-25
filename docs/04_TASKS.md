@@ -237,6 +237,14 @@
 - [ ] Sign out and confirm `/knowledge` redirects to `/login`; optionally verify isolation with a second user.
 - [x] Confirm no embedding, ingestion, file-upload, or retrieval dependency exists.
 
+**Phase 8 source-type repair validation:**
+
+- [x] UI option values use canonical lowercase/snake-case database values while rendering friendly labels.
+- [x] Fresh schema restricts `source_type` to the nine canonical values and defaults it to `website`.
+- [x] `supabase/patches/phase8_knowledge_source_type_patch.sql` safely normalizes existing friendly-label and prototype values without deleting rows or weakening RLS.
+- [ ] Run the patch in an existing Supabase Cloud project, create **Internal Docs**, and confirm the stored value is `internal_docs` while the UI label remains **Internal Docs**.
+- [ ] Confirm active/inactive updates, deletion, `/agents`, `/tools`, logout, and protected-route behavior still work.
+
 **Commit:** `feat: add knowledge source registry`
 
 ## Phase 9 — Agent run logger

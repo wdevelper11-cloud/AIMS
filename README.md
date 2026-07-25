@@ -73,6 +73,12 @@ Existing Cloud projects may have an older `tools` table that predates the live T
 
 The patch is safe and non-destructive: it uses conditional column, constraint, and index creation; normalizes only null approval/risk values; and never deletes tool rows or introduces anonymous policies. Refresh `/tools` after the SQL completes.
 
+### Phase 8 Existing Supabase Cloud Repair
+
+Knowledge source types use normalized database values—`website`, `pdf`, `notion`, `google_drive`, `internal_docs`, `api_docs`, `database`, `slack`, and `github_repo`—while the UI displays friendly labels such as **Google Drive**, **Internal Docs**, and **GitHub Repo**.
+
+If an existing Cloud project rejects a source type or still stores friendly labels, run `supabase/patches/phase8_knowledge_source_type_patch.sql` once in the hosted **SQL Editor**. The patch removes the outdated type constraint, normalizes existing friendly labels and earlier prototype values, restores the canonical type and status constraints, sets `website` as the default type, and keeps RLS enabled. It preserves all rows and adds no policies or privileged credentials.
+
 ## Environment variables
 
 ```bash
@@ -153,8 +159,8 @@ The MVP does **not** implement RAG, embeddings, vector search, file upload, docu
 Manual validation against Supabase Cloud:
 
 1. Sign in as test user A and open `/knowledge`; confirm **No knowledge sources registered yet.** appears when the workspace is empty.
-2. Add **Support Playbook**, select **Internal Docs**, enter `https://example.com/support-playbook`, and leave status active.
-3. Confirm it appears, then inspect **Table Editor → knowledge_sources** and verify its title, source type, URL, status, and resolved workspace `project_id`.
+2. Add **Support Playbook**, select **Internal Docs**, enter `https://example.com/support-playbook`, and leave status active. The UI label maps to the normalized value `internal_docs`.
+3. Confirm it appears as **Internal Docs**, then inspect **Table Editor → knowledge_sources** and verify `source_type = internal_docs` along with its title, URL, status, and resolved workspace `project_id`.
 4. Change status to inactive and back to active; verify both changes in the UI and Cloud row.
 5. Delete the source after accepting confirmation and verify it disappears from the UI and Table Editor.
 6. Sign out and confirm `/knowledge` redirects to `/login`.
