@@ -31,6 +31,7 @@ alter table public.agent_runs
 
 create table if not exists public.agent_run_steps (
   id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
   run_id uuid references public.agent_runs(id) on delete cascade,
   tool_id uuid references public.tools(id) on delete set null,
   step_order integer,
@@ -42,6 +43,7 @@ create table if not exists public.agent_run_steps (
 
 alter table public.agent_run_steps
   add column if not exists id uuid default gen_random_uuid(),
+  add column if not exists project_id uuid,
   add column if not exists run_id uuid,
   add column if not exists tool_id uuid,
   add column if not exists step_order integer,
@@ -57,6 +59,10 @@ update public.agent_runs set risk_level = 'medium' where risk_level is null;
 update public.agent_runs set latency_ms = 0 where latency_ms is null;
 update public.agent_runs set cost_usd = 0 where cost_usd is null;
 update public.agent_run_steps set status = 'success' where status is null;
+update public.agent_run_steps s
+set project_id = r.project_id
+from public.agent_runs r
+where s.run_id = r.id and s.project_id is null;
 
 alter table public.agent_runs
   alter column id set default gen_random_uuid(),
@@ -74,6 +80,17 @@ alter table public.agent_run_steps
   alter column status set default 'success',
   alter column status set not null,
   alter column created_at set default now();
+
+-- Preserve orphan legacy rows instead of deleting them. Enforce NOT NULL when
+-- every step could be associated with its parent run; otherwise emit guidance.
+do $$
+begin
+  if not exists (select 1 from public.agent_run_steps where project_id is null) then
+    alter table public.agent_run_steps alter column project_id set not null;
+  else
+    raise notice 'agent_run_steps contains orphan rows with null project_id; repair their run_id/project_id before setting NOT NULL.';
+  end if;
+end $$;
 
 -- Add missing primary keys, foreign keys, and canonical checks without removing rows.
 do $$
@@ -105,6 +122,9 @@ begin
   if not exists (select 1 from pg_constraint where conrelid = 'public.agent_run_steps'::regclass and conname = 'agent_run_steps_run_id_fkey') then
     alter table public.agent_run_steps add constraint agent_run_steps_run_id_fkey foreign key (run_id) references public.agent_runs(id) on delete cascade not valid;
   end if;
+  if not exists (select 1 from pg_constraint where conrelid = 'public.agent_run_steps'::regclass and conname = 'agent_run_steps_project_id_fkey') then
+    alter table public.agent_run_steps add constraint agent_run_steps_project_id_fkey foreign key (project_id) references public.projects(id) on delete cascade not valid;
+  end if;
   if not exists (select 1 from pg_constraint where conrelid = 'public.agent_run_steps'::regclass and conname = 'agent_run_steps_tool_id_fkey') then
     alter table public.agent_run_steps add constraint agent_run_steps_tool_id_fkey foreign key (tool_id) references public.tools(id) on delete set null not valid;
   end if;
@@ -114,11 +134,19 @@ end $$;
 
 create index if not exists agent_runs_project_id_idx on public.agent_runs(project_id);
 create index if not exists agent_runs_agent_id_idx on public.agent_runs(agent_id);
+create index if not exists agent_run_steps_project_id_idx on public.agent_run_steps(project_id);
 create index if not exists agent_run_steps_run_id_idx on public.agent_run_steps(run_id);
 create index if not exists agent_run_steps_tool_id_idx on public.agent_run_steps(tool_id);
 
 alter table public.agent_runs enable row level security;
 alter table public.agent_run_steps enable row level security;
+
+-- Reinstall step policies so project_id must match both an owned project and
+-- the parent run. This happens inside the transaction while RLS stays enabled.
+drop policy if exists "agent_run_steps_select_owned_run" on public.agent_run_steps;
+drop policy if exists "agent_run_steps_insert_owned_run" on public.agent_run_steps;
+drop policy if exists "agent_run_steps_update_owned_run" on public.agent_run_steps;
+drop policy if exists "agent_run_steps_delete_owned_run" on public.agent_run_steps;
 
 -- Install strict authenticated-owner policies only when each named policy is absent.
 do $$
@@ -146,20 +174,20 @@ do $$
 begin
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'agent_run_steps' and policyname = 'agent_run_steps_select_owned_run') then
     create policy "agent_run_steps_select_owned_run" on public.agent_run_steps for select to authenticated
-      using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = run_id and p.owner_id = (select auth.uid())));
+      using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
   end if;
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'agent_run_steps' and policyname = 'agent_run_steps_insert_owned_run') then
     create policy "agent_run_steps_insert_owned_run" on public.agent_run_steps for insert to authenticated
-      with check (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = run_id and p.owner_id = (select auth.uid())));
+      with check (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
   end if;
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'agent_run_steps' and policyname = 'agent_run_steps_update_owned_run') then
     create policy "agent_run_steps_update_owned_run" on public.agent_run_steps for update to authenticated
-      using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = run_id and p.owner_id = (select auth.uid())))
-      with check (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = run_id and p.owner_id = (select auth.uid())));
+      using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())))
+      with check (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
   end if;
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'agent_run_steps' and policyname = 'agent_run_steps_delete_owned_run') then
     create policy "agent_run_steps_delete_owned_run" on public.agent_run_steps for delete to authenticated
-      using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = run_id and p.owner_id = (select auth.uid())));
+      using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
   end if;
 end $$;
 
@@ -171,3 +199,11 @@ commit;
 -- select indexname from pg_indexes where schemaname = 'public' and tablename in ('agent_runs', 'agent_run_steps') order by indexname;
 -- select tablename, policyname, roles, cmd from pg_policies
 --   where schemaname = 'public' and tablename in ('agent_runs', 'agent_run_steps') order by tablename, policyname;
+
+-- Inspect recent steps and their direct project ownership:
+-- select s.id, s.project_id, p.owner_id, s.run_id, s.tool_id, t.name as tool_name,
+--   s.step_order, s.status, s.created_at
+-- from public.agent_run_steps s
+-- join public.projects p on p.id = s.project_id
+-- left join public.tools t on t.id = s.tool_id
+-- order by s.created_at desc;

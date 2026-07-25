@@ -268,7 +268,7 @@
 - [ ] Log success, failure, and review-required runs; confirm each value and resolved `project_id` in Table Editor.
 - [ ] Confirm a default selection stores `risk_level = medium`, a high-risk selection stores `risk_level = high`, and the table renders each risk badge.
 - [ ] Attempt negative/fractional latency and negative cost; confirm client and database rejection.
-- [ ] Add an optional approved-tool step and verify its `run_id`, `tool_id`, order, input/output, and status.
+- [ ] Add an optional approved-tool step and verify its `project_id` matches the parent run’s workspace along with its `run_id`, `tool_id`, order, input/output, and status.
 - [ ] Refresh without duplicating rows; verify logout protection and optional cross-user RLS isolation.
 - [ ] Confirm `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/login`, logout, topbar, and default-workspace behavior are unchanged.
 

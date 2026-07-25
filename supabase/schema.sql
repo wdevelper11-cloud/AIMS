@@ -75,6 +75,7 @@ create table public.agent_runs (
 
 create table public.agent_run_steps (
   id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
   run_id uuid references public.agent_runs(id) on delete cascade,
   tool_id uuid references public.tools(id) on delete set null,
   step_order integer,
@@ -95,8 +96,9 @@ create index tools_project_id_idx on public.tools(project_id);
 create index knowledge_sources_project_id_idx on public.knowledge_sources(project_id);
 create index agent_runs_project_id_idx on public.agent_runs(project_id);
 create index agent_runs_agent_id_idx on public.agent_runs(agent_id);
-create index agent_run_steps_run_id_idx on public.agent_run_steps(run_id);
-create index agent_run_steps_tool_id_idx on public.agent_run_steps(tool_id);
+create index if not exists agent_run_steps_project_id_idx on public.agent_run_steps(project_id);
+create index if not exists agent_run_steps_run_id_idx on public.agent_run_steps(run_id);
+create index if not exists agent_run_steps_tool_id_idx on public.agent_run_steps(tool_id);
 
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
@@ -172,18 +174,18 @@ create policy "agent_runs_delete_owned_project" on public.agent_runs for delete 
 -- Step ownership is derived through its run and that run's project.
 create policy "agent_run_steps_select_owned_run" on public.agent_run_steps for select to authenticated
   using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())));
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
 create policy "agent_run_steps_insert_owned_run" on public.agent_run_steps for insert to authenticated
   with check (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())));
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
 create policy "agent_run_steps_update_owned_run" on public.agent_run_steps for update to authenticated
   using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())))
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())))
   with check (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())));
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
 create policy "agent_run_steps_delete_owned_run" on public.agent_run_steps for delete to authenticated
   using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())));
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
 
 -- Seed data is intentionally omitted. Create test rows while authenticated so RLS
 -- can associate them with a real auth.users ID.

@@ -102,6 +102,7 @@ export interface DatabaseAgentRun {
 
 export interface DatabaseAgentRunStep {
   id: string;
+  project_id: string;
   run_id: string;
   tool_id: string | null;
   step_order: number | null;

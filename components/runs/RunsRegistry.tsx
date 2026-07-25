@@ -70,6 +70,7 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
         return;
       }
       const { error: stepError } = await supabase.from("agent_run_steps").insert({
+        project_id: projectId,
         run_id: run.id,
         tool_id: toolId,
         step_order: 1,
