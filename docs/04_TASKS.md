@@ -154,21 +154,30 @@
 
 ## Phase 6 — Agent registry
 
+**Status:** Implemented — Supabase Cloud persistence and cross-user isolation remain manual checks in the target project.
+
 **Goal:** Create and manage the workspace's AI-agent inventory.
 
-**Files likely touched:** `app/(dashboard)/agents/page.tsx`, `components/forms/agent-form.tsx`, `lib/queries/agents.ts`, `lib/validation/agents.ts`
+**Files touched:** `app/(protected)/agents/page.tsx`, `components/agents/AgentsRegistry.tsx`, `components/ui/Badge.tsx`, `lib/types.ts`, documentation
 
 **Acceptance criteria:**
 
-- Users can list, create, edit, and delete agents.
-- Required fields and allowed status/risk values are validated.
-- Status and risk are visually distinct.
+- [x] Initial data is loaded server-side and filtered by the resolved default project ID.
+- [x] Users can create agents, update lifecycle status, and delete agents.
+- [x] Required fields, defaults, and allowed status/risk values are validated by the UI and database constraints.
+- [x] Every mutation is explicitly project-scoped in addition to RLS enforcement.
+- [x] Empty, success, and Supabase error states are visible without demo-data fallback.
+- [x] Status and risk are visually distinct.
 
 **Manual test checklist:**
 
-- Create each risk/status combination.
-- Edit an agent and refresh to verify persistence.
-- Attempt blank or invalid input and confirm it is rejected.
+- [ ] Sign in as user A, open `/agents`, and confirm the empty state for a new workspace.
+- [ ] Create Support Triage Agent and verify its values and `project_id` in Supabase Table Editor.
+- [ ] Change its status from active to paused and verify persistence after refresh.
+- [ ] Delete it and verify that the Cloud row is removed.
+- [ ] Attempt blank required input and confirm it is rejected.
+- [ ] Sign out and confirm `/agents` redirects to `/login`.
+- [ ] Sign in as user B and confirm user A's agents are isolated by RLS.
 
 **Commit:** `feat: build agent registry`
 

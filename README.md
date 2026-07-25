@@ -15,7 +15,8 @@ AIMS provides a project-scoped operational workspace for agent inventory, govern
 - Product landing and working email/password login/signup experience
 - Shared responsive SaaS dashboard shell and navigation
 - Eight operational metric cards
-- Agent, tool, knowledge-source, and run registries backed by typed demo data
+- Live agent registry with create, status update, and delete operations
+- Tool, knowledge-source, and run registries backed by typed demo data
 - Chronological audit timeline with status, risk, cost, and latency
 - Supabase Cloud cookie-backed browser/server auth clients
 - Protected application routes, persistent sessions, and logout
@@ -36,7 +37,7 @@ No custom API server, ORM, local Supabase stack, AI runtime, or vector database 
 
 Next.js is the application and presentation layer. Supabase Cloud is the only planned backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
 
-Authentication is connected to Supabase Cloud. Operational records still read only from `lib/demo-data.ts`; CRUD and live metrics remain intentionally deferred to later phases.
+Authentication and the agent registry are connected to Supabase Cloud. The agent page performs project-scoped reads and mutations through the authenticated session, with RLS as its authorization boundary. Other operational pages and dashboard metrics still use `lib/demo-data.ts` and remain deferred to later phases.
 
 ## Routes
 
@@ -45,7 +46,7 @@ Authentication is connected to Supabase Cloud. Operational records still read on
 | `/` | Product landing page | Static |
 | `/login` | Email/password login and signup | Public; redirects authenticated users |
 | `/dashboard` | Fleet health and recent runs | Protected; static demo data |
-| `/agents` | Agent registry | Protected; static demo data |
+| `/agents` | Agent registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/tools` | Governed tool registry | Protected; static demo data |
 | `/knowledge` | Knowledge-source inventory | Protected; static demo data |
 | `/runs` | Execution log | Protected; static demo data |
@@ -107,13 +108,27 @@ To verify this against Supabase Cloud:
 
 The dedupe patch adds `projects.is_default`, keeps the earliest project per owner as the normalized default, marks every later duplicate non-default without deleting it, and creates the partial unique index. It also aligns missing profile columns and keeps RLS enabled. The patch is safe and non-destructive: it does not drop tables, delete user data, create users, or add anonymous policies.
 
+## Agent Registry CRUD (Phase 6)
+
+`/agents` loads only rows whose `project_id` matches the authenticated user's resolved default workspace. Users can register an agent, change its lifecycle status, and delete it. Every mutation includes both the resolved project ID and the target row where applicable; the project ID is never accepted from user input. Supabase RLS independently verifies project ownership.
+
+Manual validation against Supabase Cloud:
+
+1. Sign in as test user A and open `/agents`; confirm **No agents registered yet.** appears when the workspace is empty.
+2. Create **Support Triage Agent** with role **Classifies and routes customer support requests**, model `gpt-4.1-mini`, active status, medium risk, and description **Handles first-pass ticket triage**.
+3. Confirm the row appears, then inspect **Table Editor → agents** and verify all values and the resolved workspace `project_id`.
+4. Change the status to paused and verify the UI and Cloud row update.
+5. Delete the agent after accepting the confirmation and verify it disappears from both the UI and Table Editor.
+6. Sign out and confirm `/agents` redirects to `/login`.
+7. Optionally sign in as test user B and confirm user A's agents are not visible or writable.
+
 ## Current status
 
-This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, and Phase 5 profile/default-workspace resolution. All operational records and metrics remain deterministic demo data. CRUD buttons are intentionally non-functional, pages do not query Supabase for operational data, and no real AI APIs are called.
+This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, and Phase 6 live agent CRUD. Tools, knowledge sources, runs, audit history, and dashboard metrics remain deterministic demo data. No real AI APIs are called.
 
 ## Next implementation phases
 
-1. Implement project-scoped CRUD for agents, tools, and knowledge sources.
+1. Implement project-scoped CRUD for tools and knowledge sources.
 2. Add manual run and run-step logging.
 3. Replace demo metrics and audit events with project-scoped queries.
 4. Verify RLS isolation with separate test users, then deploy to Vercel.
