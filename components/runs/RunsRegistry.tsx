@@ -73,7 +73,7 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
         project_id: projectId,
         run_id: run.id,
         tool_id: toolId,
-        step_order: 1,
+        step_number: 1,
         input: String(values.get("step_input") ?? "").trim() || null,
         output: String(values.get("step_output") ?? "").trim() || null,
         status: values.get("step_status") as AgentRunStatus,

@@ -34,7 +34,7 @@ create table if not exists public.agent_run_steps (
   project_id uuid not null references public.projects(id) on delete cascade,
   run_id uuid references public.agent_runs(id) on delete cascade,
   tool_id uuid references public.tools(id) on delete set null,
-  step_order integer,
+  step_number integer not null default 1,
   input text,
   output text,
   status text not null default 'success',
@@ -46,7 +46,7 @@ alter table public.agent_run_steps
   add column if not exists project_id uuid,
   add column if not exists run_id uuid,
   add column if not exists tool_id uuid,
-  add column if not exists step_order integer,
+  add column if not exists step_number integer,
   add column if not exists input text,
   add column if not exists output text,
   add column if not exists status text default 'success',
@@ -64,6 +64,21 @@ set project_id = r.project_id
 from public.agent_runs r
 where s.run_id = r.id and s.project_id is null;
 
+-- Prefer a legacy step_order value when that column exists; otherwise assign 1.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'agent_run_steps' and column_name = 'step_order'
+  ) then
+    execute 'update public.agent_run_steps set step_number = coalesce(step_number, step_order, 1) where step_number is null';
+    execute 'update public.agent_run_steps set step_order = step_number where step_order is null';
+    execute 'alter table public.agent_run_steps alter column step_order drop not null';
+  else
+    update public.agent_run_steps set step_number = 1 where step_number is null;
+  end if;
+end $$;
+
 alter table public.agent_runs
   alter column id set default gen_random_uuid(),
   alter column task set not null,
@@ -77,6 +92,8 @@ alter table public.agent_runs
 
 alter table public.agent_run_steps
   alter column id set default gen_random_uuid(),
+  alter column step_number set default 1,
+  alter column step_number set not null,
   alter column status set default 'success',
   alter column status set not null,
   alter column created_at set default now();
@@ -201,8 +218,8 @@ commit;
 --   where schemaname = 'public' and tablename in ('agent_runs', 'agent_run_steps') order by tablename, policyname;
 
 -- Inspect recent steps and their direct project ownership:
--- select s.id, s.project_id, p.owner_id, s.run_id, s.tool_id, t.name as tool_name,
---   s.step_order, s.status, s.created_at
+-- select s.id, s.project_id, p.name as project_name, s.run_id, s.tool_id,
+--   t.name as tool_name, s.step_number, s.status, s.created_at
 -- from public.agent_run_steps s
 -- join public.projects p on p.id = s.project_id
 -- left join public.tools t on t.id = s.tool_id

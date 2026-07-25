@@ -105,7 +105,8 @@ export interface DatabaseAgentRunStep {
   project_id: string;
   run_id: string;
   tool_id: string | null;
-  step_order: number | null;
+  step_number: number;
+  step_order?: number | null;
   input: string | null;
   output: string | null;
   status: AgentRunStatus;
