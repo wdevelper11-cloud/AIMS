@@ -22,7 +22,7 @@ The `tools` registry stores `name`, optional `category`, `is_approved` (default 
 
 The `knowledge_sources.source_type` column defaults to `website` and accepts the canonical values `website`, `pdf`, `notion`, `google_drive`, `internal_docs`, `api_docs`, `database`, `slack`, and `github_repo`. The UI maps these to **Website**, **PDF**, **Notion**, **Google Drive**, **Internal Docs**, **API Docs**, **Database**, **Slack**, and **GitHub Repo**; friendly labels are never written to the database. Existing Supabase Cloud projects with an older constraint or friendly-label rows must run `supabase/patches/phase8_knowledge_source_type_patch.sql` in the hosted SQL Editor. The transactional patch normalizes existing values without deleting rows, restores the canonical type and active/inactive status constraints, and keeps RLS enabled.
 
-The `agent_runs` table stores a project and optional agent reference with required task, optional output, `success`/`failed`/`needs_review` status, non-negative integer latency, non-negative numeric estimated cost, and creation timestamp. `agent_run_steps` stores optional tool evidence beneath a run with order, input, output, the same controlled statuses, and a timestamp. Existing hosted projects must run `supabase/patches/phase9_agent_runs_patch.sql`; it safely aligns missing tables/columns, defaults, foreign keys, checks, indexes, RLS, and authenticated owner policies without deleting or seeding rows.
+The `agent_runs` table stores a project and optional agent reference with required task, optional output, `success`/`failed`/`needs_review` status, execution `risk_level`, non-negative integer latency, non-negative numeric estimated cost, and creation timestamp. Run risk accepts only `low`, `medium`, or `high`, is required, and defaults to `medium`. `agent_run_steps` stores optional tool evidence beneath a run with order, input, output, the same controlled statuses, and a timestamp. Existing hosted projects must run `supabase/patches/phase9_agent_runs_patch.sql`; it safely aligns missing tables/columns, backfills null run risk to `medium`, restores defaults, foreign keys, checks, indexes, RLS, and authenticated owner policies without deleting or seeding rows.
 
 The application queries the project owned by the authenticated user where `is_default = true` and creates it only when none exists. `projects_one_default_per_owner_idx` is a partial unique index on `owner_id` for default rows, so the database prevents two default workspaces for one owner while preserving non-default historical rows. `projects_owner_default_idx` supports the resolution query. No auth trigger or service-role client is required.
 
@@ -35,7 +35,7 @@ The patch is non-destructive: it does not drop tables, delete rows, create fake 
 ## Controlled values
 
 - Agent `status`: `active`, `paused`, `archived`
-- Agent and tool `risk_level`: `low`, `medium`, `high`
+- Agent, tool, and run `risk_level`: `low`, `medium`, `high` (default `medium`)
 - Knowledge-source `status`: `active`, `inactive`
 - Run and run-step `status`: `success`, `failed`, `needs_review`
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { createBrowserClient } from "@/lib/supabase/client";
-import type { AgentOption, AgentRunStatus, DatabaseAgentRun, ToolOption } from "@/lib/types";
+import type { AgentOption, AgentRunStatus, DatabaseAgentRun, RiskLevel, ToolOption } from "@/lib/types";
 
 type Feedback = { tone: "success" | "error"; message: string } | null;
 
@@ -30,6 +30,8 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
     const task = String(values.get("task") ?? "").trim();
     const latencyText = String(values.get("latency_ms") ?? "0").trim() || "0";
     const costText = String(values.get("cost_usd") ?? "0").trim() || "0";
+    const riskValue = String(values.get("risk_level") ?? "medium");
+    const riskLevel: RiskLevel = riskValue === "low" || riskValue === "high" ? riskValue : "medium";
     const latencyMs = Number(latencyText);
     const costUsd = Number(costText);
 
@@ -45,12 +47,19 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
       task,
       output: String(values.get("output") ?? "").trim() || null,
       status: values.get("status") as AgentRunStatus,
+      risk_level: riskLevel,
       latency_ms: latencyMs,
       cost_usd: costUsd,
     }).select("id").single<{ id: string }>();
 
     if (runError || !run) {
-      setFeedback({ tone: "error", message: `Agent run could not be logged: ${runError?.message ?? "No run was returned."}` });
+      const schemaMissingRisk = runError && /risk_level|agent_runs_risk_level_check/i.test(runError.message);
+      setFeedback({
+        tone: "error",
+        message: schemaMissingRisk
+          ? "Your Supabase Cloud agent_runs schema is missing the Phase 9 risk_level default. Run supabase/patches/phase9_agent_runs_patch.sql in the Supabase SQL Editor."
+          : `Agent run could not be logged: ${runError?.message ?? "No run was returned."}`,
+      });
       return;
     }
 
@@ -83,8 +92,8 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
     {agents.length === 0 ? <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Create an agent before logging runs.</p> : <div className="flex justify-end"><button type="button" onClick={() => setShowForm((open) => !open)} className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">{showForm ? "Cancel" : "Log Agent Run"}</button></div>}
     {showForm && <RunForm agents={agents} approvedTools={approvedTools} onSubmit={createRun} disabled={isPending} />}
     {feedback && <p role="status" className={`rounded-lg border px-4 py-3 text-sm ${feedback.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>{feedback.message}</p>}
-    {initialRuns.length === 0 ? <EmptyState title="No agent runs logged yet." description="Log your first agent run." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Agent</th><th>Task</th><th>Status</th><th>Latency</th><th>Cost</th><th>Output preview</th><th>Created at</th></tr></thead><tbody>{initialRuns.map((run) => <tr key={run.id}>
-      <td className="font-semibold !text-slate-900">{run.agent_id ? agentNames.get(run.agent_id) ?? "Deleted agent" : "Deleted agent"}</td><td>{run.task}</td><td><Badge value={run.status} /></td><td>{run.latency_ms.toLocaleString()} ms</td><td>${Number(run.cost_usd).toFixed(4)}</td><td className="max-w-xs truncate" title={run.output ?? undefined}>{run.output || "—"}</td><td>{new Date(run.created_at).toLocaleString()}</td>
+    {initialRuns.length === 0 ? <EmptyState title="No agent runs logged yet." description="Log your first agent run." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Agent</th><th>Task</th><th>Status</th><th>Risk</th><th>Latency</th><th>Cost</th><th>Output preview</th><th>Created at</th></tr></thead><tbody>{initialRuns.map((run) => <tr key={run.id}>
+      <td className="font-semibold !text-slate-900">{run.agent_id ? agentNames.get(run.agent_id) ?? "Deleted agent" : "Deleted agent"}</td><td>{run.task}</td><td><Badge value={run.status} /></td><td><Badge value={run.risk_level} /></td><td>{run.latency_ms.toLocaleString()} ms</td><td>${Number(run.cost_usd).toFixed(4)}</td><td className="max-w-xs truncate" title={run.output ?? undefined}>{run.output || "—"}</td><td>{new Date(run.created_at).toLocaleString()}</td>
     </tr>)}</tbody></table></div>}
   </div>;
 }
@@ -94,6 +103,7 @@ function RunForm({ agents, approvedTools, onSubmit, disabled }: { agents: AgentO
   return <form onSubmit={onSubmit} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-950">Log an agent run</h2><p className="mt-1 text-sm text-slate-500">Record execution evidence manually; this does not execute an agent or call an AI API.</p><div className="mt-4 grid gap-4 md:grid-cols-2">
     <label className="text-sm font-medium text-slate-700">Agent *<select className={inputClass} name="agent_id" required defaultValue=""><option value="" disabled>Select an agent</option>{agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}</select></label>
     <label className="text-sm font-medium text-slate-700">Status<select className={inputClass} name="status" defaultValue="success"><option value="success">Success</option><option value="failed">Failed</option><option value="needs_review">Needs review</option></select></label>
+    <label className="text-sm font-medium text-slate-700">Risk level<select className={inputClass} name="risk_level" defaultValue="medium"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
     <label className="text-sm font-medium text-slate-700 md:col-span-2">Task *<input className={inputClass} name="task" required /></label>
     <label className="text-sm font-medium text-slate-700 md:col-span-2">Output<textarea className={inputClass} name="output" rows={3} /></label>
     <label className="text-sm font-medium text-slate-700">Latency (ms)<input className={inputClass} name="latency_ms" type="number" min="0" step="1" defaultValue="0" required /></label>

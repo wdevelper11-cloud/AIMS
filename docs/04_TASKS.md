@@ -256,7 +256,7 @@
 **Acceptance criteria:**
 
 - [x] `/runs` lists live runs filtered to the resolved default project with agent names mapped from a separately scoped query.
-- [x] Users can manually log agent, task, output, status, non-negative latency, and non-negative estimated cost.
+- [x] Users can manually log agent, task, output, status, normalized execution risk, non-negative latency, and non-negative estimated cost.
 - [x] Users can attach one optional approved-tool step; no agent execution or workflow builder is included.
 - [x] Agent and tool choices come only from the current project, and RLS independently enforces ownership.
 - [x] Query failures render an explicit error without demo fallback.
@@ -266,6 +266,7 @@
 
 - [ ] Run `supabase/patches/phase9_agent_runs_patch.sql` in Supabase Cloud SQL Editor.
 - [ ] Log success, failure, and review-required runs; confirm each value and resolved `project_id` in Table Editor.
+- [ ] Confirm a default selection stores `risk_level = medium`, a high-risk selection stores `risk_level = high`, and the table renders each risk badge.
 - [ ] Attempt negative/fractional latency and negative cost; confirm client and database rejection.
 - [ ] Add an optional approved-tool step and verify its `run_id`, `tool_id`, order, input/output, and status.
 - [ ] Refresh without duplicating rows; verify logout protection and optional cross-user RLS isolation.

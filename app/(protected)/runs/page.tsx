@@ -11,7 +11,7 @@ export default async function RunsPage() {
 
   const supabase = createServerClient();
   const [runsResult, agentsResult, toolsResult] = await Promise.all([
-    supabase.from("agent_runs").select("id, project_id, agent_id, task, output, status, latency_ms, cost_usd, created_at").eq("project_id", workspace.project.id).order("created_at", { ascending: false }),
+    supabase.from("agent_runs").select("id, project_id, agent_id, task, output, status, risk_level, latency_ms, cost_usd, created_at").eq("project_id", workspace.project.id).order("created_at", { ascending: false }),
     supabase.from("agents").select("id, name").eq("project_id", workspace.project.id).order("name"),
     supabase.from("tools").select("id, name").eq("project_id", workspace.project.id).eq("is_approved", true).order("name"),
   ]);

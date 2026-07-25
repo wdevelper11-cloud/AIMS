@@ -94,6 +94,7 @@ export interface DatabaseAgentRun {
   task: string;
   output: string | null;
   status: AgentRunStatus;
+  risk_level: RiskLevel;
   latency_ms: number;
   cost_usd: number;
   created_at: string;

@@ -81,7 +81,7 @@ If an existing Cloud project rejects a source type or still stores friendly labe
 
 ### Phase 9 Existing Supabase Cloud Alignment
 
-Before using the live Run Logger on an existing hosted project, run `supabase/patches/phase9_agent_runs_patch.sql` once in the Supabase Cloud **SQL Editor**. The non-destructive patch aligns `agent_runs` and `agent_run_steps` columns, defaults, constraints, indexes, RLS, and strict authenticated-owner policies without deleting or seeding data.
+After pulling Phase 9—and before using the live Run Logger on an existing hosted project—run `supabase/patches/phase9_agent_runs_patch.sql` once in the Supabase Cloud **SQL Editor**. The non-destructive patch aligns `agent_runs` and `agent_run_steps` columns, defaults, constraints, indexes, RLS, and strict authenticated-owner policies without deleting or seeding data. It adds and backfills run `risk_level`, defaults it to `medium`, and restricts it to `low`, `medium`, or `high`.
 
 ## Environment variables
 
@@ -172,16 +172,16 @@ Manual validation against Supabase Cloud:
 
 ## Agent Run Logger Persistence (Phase 9)
 
-`/runs` records manual execution evidence for AI-agent observability. Each project-scoped run stores its agent, task, optional output, result status, latency, estimated cost, and timestamp. An operator may also attach one optional approved-tool step with input, output, and status. This is logging only: AIMS does not execute agents or call AI APIs.
+`/runs` records manual execution evidence for AI-agent observability. Each project-scoped run stores its agent, task, optional output, result status, execution risk level, latency, estimated cost, and timestamp. Risk is stored as the normalized value `low`, `medium`, or `high`, with `medium` selected by default. An operator may also attach one optional approved-tool step with input, output, and status. This is logging only: AIMS does not execute agents or call AI APIs.
 
 Manual validation against Supabase Cloud:
 
 1. Run `supabase/patches/phase9_agent_runs_patch.sql` in the hosted SQL Editor.
 2. Sign in as test user A, create an agent if needed, and optionally register an approved tool.
 3. Open `/runs`; confirm **No agent runs logged yet.** appears when the workspace has no runs.
-4. Log **Classify refund request** with output **Refund request classified as billing issue.**, success status, `830` ms latency, and `0.0124` USD cost.
-5. In **Table Editor → agent_runs**, verify the resolved `project_id`, selected `agent_id`, task, output, status, numeric latency/cost, and a single new row.
-6. Log a `needs_review` run, then log another run with an approved tool selected; verify its `agent_run_steps` row has the correct `run_id`, `tool_id`, order, input/output, and status.
+4. Log **Classify refund request** with output **Refund request classified as billing issue.**, success status, medium risk, `830` ms latency, and `0.0124` USD cost.
+5. In **Table Editor → agent_runs**, verify the resolved `project_id`, selected `agent_id`, task, output, status, `risk_level = medium`, numeric latency/cost, and a single new row.
+6. Log a `needs_review` run with high risk, then log another run with an approved tool selected; verify `risk_level = high` and that its `agent_run_steps` row has the correct `run_id`, `tool_id`, order, input/output, and status.
 7. Refresh and confirm rows are not duplicated. Sign out and confirm `/runs` redirects to `/login`.
 8. Optionally sign in as test user B and confirm user A’s runs and steps are not visible.
 

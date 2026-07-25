@@ -64,6 +64,8 @@ create table public.agent_runs (
   output text,
   status text not null default 'success'
     constraint agent_runs_status_check check (status in ('success', 'failed', 'needs_review')),
+  risk_level text not null default 'medium'
+    constraint agent_runs_risk_level_check check (risk_level in ('low', 'medium', 'high')),
   latency_ms integer default 0
     constraint agent_runs_latency_ms_check check (latency_ms >= 0),
   cost_usd numeric default 0

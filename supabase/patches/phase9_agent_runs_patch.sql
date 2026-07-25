@@ -11,6 +11,7 @@ create table if not exists public.agent_runs (
   task text not null,
   output text,
   status text not null default 'success',
+  risk_level text not null default 'medium',
   latency_ms integer default 0,
   cost_usd numeric default 0,
   created_at timestamptz default now()
@@ -23,6 +24,7 @@ alter table public.agent_runs
   add column if not exists task text,
   add column if not exists output text,
   add column if not exists status text default 'success',
+  add column if not exists risk_level text default 'medium',
   add column if not exists latency_ms integer default 0,
   add column if not exists cost_usd numeric default 0,
   add column if not exists created_at timestamptz default now();
@@ -51,6 +53,7 @@ alter table public.agent_run_steps
 -- Restore defaults and required fields after older nullable schemas are aligned.
 update public.agent_runs set task = 'Legacy agent run' where task is null;
 update public.agent_runs set status = 'success' where status is null;
+update public.agent_runs set risk_level = 'medium' where risk_level is null;
 update public.agent_runs set latency_ms = 0 where latency_ms is null;
 update public.agent_runs set cost_usd = 0 where cost_usd is null;
 update public.agent_run_steps set status = 'success' where status is null;
@@ -60,6 +63,8 @@ alter table public.agent_runs
   alter column task set not null,
   alter column status set default 'success',
   alter column status set not null,
+  alter column risk_level set default 'medium',
+  alter column risk_level set not null,
   alter column latency_ms set default 0,
   alter column cost_usd set default 0,
   alter column created_at set default now();
@@ -84,6 +89,8 @@ begin
   end if;
   alter table public.agent_runs drop constraint if exists agent_runs_status_check;
   alter table public.agent_runs add constraint agent_runs_status_check check (status in ('success', 'failed', 'needs_review')) not valid;
+  alter table public.agent_runs drop constraint if exists agent_runs_risk_level_check;
+  alter table public.agent_runs add constraint agent_runs_risk_level_check check (risk_level in ('low', 'medium', 'high')) not valid;
   alter table public.agent_runs drop constraint if exists agent_runs_latency_ms_check;
   alter table public.agent_runs add constraint agent_runs_latency_ms_check check (latency_ms >= 0) not valid;
   alter table public.agent_runs drop constraint if exists agent_runs_cost_usd_check;
