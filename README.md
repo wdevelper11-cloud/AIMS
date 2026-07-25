@@ -16,7 +16,8 @@ AIMS provides a project-scoped operational workspace for agent inventory, govern
 - Shared responsive SaaS dashboard shell and navigation
 - Eight operational metric cards
 - Live agent registry with create, status update, and delete operations
-- Tool, knowledge-source, and run registries backed by typed demo data
+- Live governed tool registry with create, approval, risk, and delete operations
+- Knowledge-source and run registries backed by typed demo data
 - Chronological audit timeline with status, risk, cost, and latency
 - Supabase Cloud cookie-backed browser/server auth clients
 - Protected application routes, persistent sessions, and logout
@@ -37,7 +38,7 @@ No custom API server, ORM, local Supabase stack, AI runtime, or vector database 
 
 Next.js is the application and presentation layer. Supabase Cloud is the only planned backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
 
-Authentication and the agent registry are connected to Supabase Cloud. The agent page performs project-scoped reads and mutations through the authenticated session, with RLS as its authorization boundary. Other operational pages and dashboard metrics still use `lib/demo-data.ts` and remain deferred to later phases.
+Authentication, the agent registry, and the tool registry are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. Other operational pages and dashboard metrics still use `lib/demo-data.ts` and remain deferred to later phases.
 
 ## Routes
 
@@ -47,7 +48,7 @@ Authentication and the agent registry are connected to Supabase Cloud. The agent
 | `/login` | Email/password login and signup | Public; redirects authenticated users |
 | `/dashboard` | Fleet health and recent runs | Protected; static demo data |
 | `/agents` | Agent registry | Protected; live Supabase CRUD scoped to the default workspace |
-| `/tools` | Governed tool registry | Protected; static demo data |
+| `/tools` | Governed tool registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/knowledge` | Knowledge-source inventory | Protected; static demo data |
 | `/runs` | Execution log | Protected; static demo data |
 | `/audit` | Chronological audit history | Protected; static demo data |
@@ -64,6 +65,12 @@ Authentication and the agent registry are connected to Supabase Cloud. The agent
 Never put a Supabase service-role key in `.env.local` or frontend code. It bypasses RLS and is not needed by this application. No Supabase CLI, local Supabase stack, or Docker service is required.
 
 The schema is available both as executable SQL in `supabase/schema.sql` and as an explained reference in `docs/03_DATABASE_SCHEMA.md`.
+
+### Phase 7 Existing Supabase Cloud Repair
+
+Existing Cloud projects may have an older `tools` table that predates the live Tool Registry. If `/tools` reports a missing Tool Registry column, open the hosted project's **SQL Editor** and run `supabase/patches/phase7_tools_registry_patch.sql` once. The patch adds missing `tools.is_approved`, `tools.category`, `tools.risk_level`, and `tools.created_at` columns, restores their defaults and risk constraint, ensures the project index exists, and keeps RLS enabled.
+
+The patch is safe and non-destructive: it uses conditional column, constraint, and index creation; normalizes only null approval/risk values; and never deletes tool rows or introduces anonymous policies. Refresh `/tools` after the SQL completes.
 
 ## Environment variables
 
@@ -122,13 +129,27 @@ Manual validation against Supabase Cloud:
 6. Sign out and confirm `/agents` redirects to `/login`.
 7. Optionally sign in as test user B and confirm user A's agents are not visible or writable.
 
+## Tool Registry CRUD (Phase 7)
+
+`/tools` is the AI-agent tool-governance module. It loads only tools in the authenticated user's resolved default workspace and supports registration, approval changes, risk classification, and deletion. The UI always derives `project_id` from the resolved workspace rather than accepting it as input, explicitly scopes every query and mutation, and relies on Supabase RLS as the independent authorization boundary.
+
+Manual validation against Supabase Cloud:
+
+1. Sign in as test user A and open `/tools`; confirm **No tools registered yet.** appears when the workspace is empty.
+2. Register **Web Search** in the **Search** category with approved status and medium risk.
+3. Inspect **Table Editor → tools** and verify its values and the resolved workspace `project_id`.
+4. Change approval to unapproved and risk to high; verify each update in the UI and Cloud row.
+5. Delete the tool after accepting the confirmation and verify it disappears from the UI and Table Editor.
+6. Sign out and confirm `/tools` redirects to `/login`.
+7. Optionally sign in as test user B and confirm user A's tools are not visible or writable.
+
 ## Current status
 
-This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, and Phase 6 live agent CRUD. Tools, knowledge sources, runs, audit history, and dashboard metrics remain deterministic demo data. No real AI APIs are called.
+This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD. Knowledge sources, runs, audit history, and dashboard metrics remain deterministic demo data. No real AI APIs are called.
 
 ## Next implementation phases
 
-1. Implement project-scoped CRUD for tools and knowledge sources.
+1. Implement project-scoped CRUD for knowledge sources.
 2. Add manual run and run-step logging.
 3. Replace demo metrics and audit events with project-scoped queries.
 4. Verify RLS isolation with separate test users, then deploy to Vercel.

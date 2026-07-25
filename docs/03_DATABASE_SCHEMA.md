@@ -18,6 +18,8 @@
 
 All primary keys are UUIDs. A profile's key references `auth.users`; the other tables use `gen_random_uuid()`. Project deletion cascades through its direct children, run deletion cascades through its steps, and deletion of an agent or tool preserves historical records by setting the optional reference to `null`.
 
+The `tools` registry stores `name`, optional `category`, `is_approved` (default `true`), `risk_level` (default `medium`, restricted to `low`, `medium`, or `high`), and `created_at`, along with its owning `project_id`. Existing Supabase Cloud projects whose `tools` table predates these fields must run `supabase/patches/phase7_tools_registry_patch.sql` in the hosted SQL Editor. The patch conditionally adds missing fields, normalizes null defaults, preserves existing data and ownership policies, and keeps RLS enabled.
+
 The application queries the project owned by the authenticated user where `is_default = true` and creates it only when none exists. `projects_one_default_per_owner_idx` is a partial unique index on `owner_id` for default rows, so the database prevents two default workspaces for one owner while preserving non-default historical rows. `projects_owner_default_idx` supports the resolution query. No auth trigger or service-role client is required.
 
 ## Existing Supabase Cloud project patch

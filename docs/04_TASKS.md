@@ -183,21 +183,34 @@
 
 ## Phase 7 — Tool registry
 
+**Status:** Implemented and programmatically validated.
+
 **Goal:** Show tool inventory, approval state, and governance risk.
 
 **Files likely touched:** `app/(dashboard)/tools/page.tsx`, `components/forms/tool-form.tsx`, `lib/queries/tools.ts`, `lib/validation/tools.ts`
 
 **Acceptance criteria:**
 
-- Users can list, create, edit, and delete tools.
-- Approval and risk states are clear.
-- Approved-tool counts use stored data.
+- [x] Users can list, create, update approval/risk, and delete tools in their resolved default project.
+- [x] Approval and risk states are clear.
+- [x] Reads and every mutation are explicitly project-scoped in addition to RLS.
+- [x] Empty and Supabase query-error states never fall back to demo data.
 
 **Manual test checklist:**
 
-- Add approved, unapproved, and review-required tools.
-- Change an approval state and refresh.
-- Confirm another user cannot see the records.
+- [ ] Register Web Search as an approved, medium-risk Search tool and verify its `project_id` in Supabase Cloud.
+- [ ] Change approval to unapproved and risk to high, then verify persistence after refresh.
+- [ ] Delete the tool and verify that the Cloud row is removed.
+- [ ] Sign out and confirm `/tools` redirects to `/login`.
+- [ ] Sign in as user B and confirm user A's records are isolated by RLS.
+
+**Schema-alignment validation:**
+
+- [ ] For an existing Cloud project with missing Tool Registry fields, run `supabase/patches/phase7_tools_registry_patch.sql` once in Supabase SQL Editor.
+- [ ] Confirm `tools.is_approved`, `tools.category`, `tools.risk_level`, and `tools.created_at` exist with the documented defaults.
+- [ ] Confirm `tools_risk_level_check`, `tools_project_id_idx`, and RLS remain enabled without anonymous or unconditional policies.
+- [ ] Refresh `/tools` and confirm the schema guidance is replaced by the live registry.
+- [ ] Confirm pre-existing tool rows remain present and null approval/risk values were normalized without deleting data.
 
 **Commit:** `feat: add governed tool registry`
 
