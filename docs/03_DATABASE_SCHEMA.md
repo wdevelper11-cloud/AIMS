@@ -14,11 +14,19 @@
 | `tools` | Approved-tool inventory and risk | `tools.project_id -> projects.id` |
 | `knowledge_sources` | Registered source metadata (not ingestion) | `knowledge_sources.project_id -> projects.id` |
 | `agent_runs` | Task output, result, latency, and estimated cost | `agent_runs.project_id -> projects.id` |
-| `agent_run_steps` | Ordered trace entries and optional tool reference | `agent_run_steps.run_id -> agent_runs.project_id -> projects.id` |
+| `agent_run_steps` | Ordered trace entries and optional tool reference | `agent_run_steps.project_id -> projects.id`, matched to `agent_runs.project_id` by RLS |
 
 All primary keys are UUIDs. A profile's key references `auth.users`; the other tables use `gen_random_uuid()`. Project deletion cascades through its direct children, run deletion cascades through its steps, and deletion of an agent or tool preserves historical records by setting the optional reference to `null`.
 
 The `tools` registry stores `name`, optional `category`, `is_approved` (default `true`), `risk_level` (default `medium`, restricted to `low`, `medium`, or `high`), and `created_at`, along with its owning `project_id`. Existing Supabase Cloud projects whose `tools` table predates these fields must run `supabase/patches/phase7_tools_registry_patch.sql` in the hosted SQL Editor. The patch conditionally adds missing fields, normalizes null defaults, preserves existing data and ownership policies, and keeps RLS enabled.
+
+The `knowledge_sources.source_type` column defaults to `website` and accepts the canonical values `website`, `pdf`, `notion`, `google_drive`, `internal_docs`, `api_docs`, `database`, `slack`, and `github_repo`. The UI maps these to **Website**, **PDF**, **Notion**, **Google Drive**, **Internal Docs**, **API Docs**, **Database**, **Slack**, and **GitHub Repo**; friendly labels are never written to the database. Existing Supabase Cloud projects with an older constraint or friendly-label rows must run `supabase/patches/phase8_knowledge_source_type_patch.sql` in the hosted SQL Editor. The transactional patch normalizes existing values without deleting rows, restores the canonical type and active/inactive status constraints, and keeps RLS enabled.
+
+The `agent_runs` table stores a project and optional agent reference with required task, optional output, `success`/`failed`/`needs_review` status, execution `risk_level`, non-negative integer latency, non-negative numeric estimated cost, and creation timestamp. Run risk accepts only `low`, `medium`, or `high`, is required, and defaults to `medium`. `agent_run_steps` stores optional tool evidence beneath a run with a direct `project_id`, canonical required `step_order` (default `1`), input, output, the same controlled statuses, and a timestamp. The duplicated project key supports direct workspace filtering and indexing; strict RLS also requires it to match the parent run’s project. Older projects may retain legacy nullable `name` or `step_number` columns; the Phase 9 patch backfills defaults and removes their NOT NULL blockers without dropping them or deleting rows. Existing hosted projects must run `supabase/patches/phase9_agent_runs_patch.sql`; it safely aligns missing tables/columns, backfills null run risk to `medium`, restores defaults, foreign keys, checks, indexes, RLS, and authenticated owner policies without deleting or seeding rows.
+
+The live dashboard depends on project, status, risk, approval, latency, cost, agent reference, and timestamp columns across `agents`, `tools`, `knowledge_sources`, and `agent_runs`. `supabase/patches/phase10_dashboard_metrics_patch.sql` aligns these fields and defaults for existing Cloud projects, creates direct and compound project/status indexes, and keeps RLS enabled without deleting or seeding records.
+
+The Phase 11 audit timeline introduces no new audit table. It reads creation metadata from the five existing operational tables, filters each query by `project_id`, and merges the results in the application. `supabase/patches/phase11_audit_timeline_patch.sql` aligns the required columns and adds `(project_id, created_at desc)` indexes for chronological reads while preserving RLS and existing data.
 
 The application queries the project owned by the authenticated user where `is_default = true` and creates it only when none exists. `projects_one_default_per_owner_idx` is a partial unique index on `owner_id` for default rows, so the database prevents two default workspaces for one owner while preserving non-default historical rows. `projects_owner_default_idx` supports the resolution query. No auth trigger or service-role client is required.
 
@@ -31,7 +39,7 @@ The patch is non-destructive: it does not drop tables, delete rows, create fake 
 ## Controlled values
 
 - Agent `status`: `active`, `paused`, `archived`
-- Agent and tool `risk_level`: `low`, `medium`, `high`
+- Agent, tool, and run `risk_level`: `low`, `medium`, `high` (default `medium`)
 - Knowledge-source `status`: `active`, `inactive`
 - Run and run-step `status`: `success`, `failed`, `needs_review`
 

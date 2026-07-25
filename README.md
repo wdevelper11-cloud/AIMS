@@ -14,11 +14,12 @@ AIMS provides a project-scoped operational workspace for agent inventory, govern
 
 - Product landing and working email/password login/signup experience
 - Shared responsive SaaS dashboard shell and navigation
-- Eight operational metric cards
+- Live project-scoped operational metric cards and recent-run history
 - Live agent registry with create, status update, and delete operations
 - Live governed tool registry with create, approval, risk, and delete operations
-- Knowledge-source and run registries backed by typed demo data
-- Chronological audit timeline with status, risk, cost, and latency
+- Live knowledge-source governance registry with create, status update, and delete operations
+- Live manual agent-run logger with status, latency, estimated cost, output, and optional tool-step persistence
+- Live chronological audit timeline derived from project-scoped operational records
 - Supabase Cloud cookie-backed browser/server auth clients
 - Protected application routes, persistent sessions, and logout
 - Automatic RLS-safe profile and default workspace resolution
@@ -38,7 +39,7 @@ No custom API server, ORM, local Supabase stack, AI runtime, or vector database 
 
 Next.js is the application and presentation layer. Supabase Cloud is the only planned backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
 
-Authentication, the agent registry, and the tool registry are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. Other operational pages and dashboard metrics still use `lib/demo-data.ts` and remain deferred to later phases.
+Authentication and the agent, tool, knowledge-source, and run registries are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. The dashboard and audit timeline also read these same project-owned tables through the authenticated RLS session.
 
 ## Routes
 
@@ -46,12 +47,12 @@ Authentication, the agent registry, and the tool registry are connected to Supab
 |---|---|---|
 | `/` | Product landing page | Static |
 | `/login` | Email/password login and signup | Public; redirects authenticated users |
-| `/dashboard` | Fleet health and recent runs | Protected; static demo data |
+| `/dashboard` | Fleet health and recent runs | Protected; live Supabase metrics scoped to the default workspace |
 | `/agents` | Agent registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/tools` | Governed tool registry | Protected; live Supabase CRUD scoped to the default workspace |
-| `/knowledge` | Knowledge-source inventory | Protected; static demo data |
-| `/runs` | Execution log | Protected; static demo data |
-| `/audit` | Chronological audit history | Protected; static demo data |
+| `/knowledge` | Knowledge-source governance registry | Protected; live Supabase CRUD scoped to the default workspace |
+| `/runs` | Manual execution logger | Protected; live Supabase persistence scoped to the default workspace |
+| `/audit` | Derived operational audit timeline | Protected; live Supabase data scoped to the default workspace |
 
 ## Supabase Cloud Setup
 
@@ -71,6 +72,24 @@ The schema is available both as executable SQL in `supabase/schema.sql` and as a
 Existing Cloud projects may have an older `tools` table that predates the live Tool Registry. If `/tools` reports a missing Tool Registry column, open the hosted project's **SQL Editor** and run `supabase/patches/phase7_tools_registry_patch.sql` once. The patch adds missing `tools.is_approved`, `tools.category`, `tools.risk_level`, and `tools.created_at` columns, restores their defaults and risk constraint, ensures the project index exists, and keeps RLS enabled.
 
 The patch is safe and non-destructive: it uses conditional column, constraint, and index creation; normalizes only null approval/risk values; and never deletes tool rows or introduces anonymous policies. Refresh `/tools` after the SQL completes.
+
+### Phase 8 Existing Supabase Cloud Repair
+
+Knowledge source types use normalized database values—`website`, `pdf`, `notion`, `google_drive`, `internal_docs`, `api_docs`, `database`, `slack`, and `github_repo`—while the UI displays friendly labels such as **Google Drive**, **Internal Docs**, and **GitHub Repo**.
+
+If an existing Cloud project rejects a source type or still stores friendly labels, run `supabase/patches/phase8_knowledge_source_type_patch.sql` once in the hosted **SQL Editor**. The patch removes the outdated type constraint, normalizes existing friendly labels and earlier prototype values, restores the canonical type and status constraints, sets `website` as the default type, and keeps RLS enabled. It preserves all rows and adds no policies or privileged credentials.
+
+### Phase 9 Existing Supabase Cloud Alignment
+
+After pulling Phase 9—and before using the live Run Logger on an existing hosted project—run `supabase/patches/phase9_agent_runs_patch.sql` once in the Supabase Cloud **SQL Editor**. The non-destructive patch aligns `agent_runs` and `agent_run_steps` columns, defaults, constraints, indexes, RLS, and strict authenticated-owner policies without deleting or seeding data. It adds and backfills run `risk_level`, defaults it to `medium`, and restricts it to `low`, `medium`, or `high`. It also repairs legacy `agent_run_steps.name` and `agent_run_steps.step_number` requirements without deleting data, while standardizing the application on canonical `step_order` with a default of `1`.
+
+### Phase 10 Existing Supabase Cloud Alignment
+
+Run `supabase/patches/phase10_dashboard_metrics_patch.sql` once in the hosted **SQL Editor** before using live dashboard metrics on an existing project. The non-destructive patch aligns metric columns and safe defaults, adds project/status indexes, and keeps RLS enabled without adding policies or seed data.
+
+### Phase 11 Existing Supabase Cloud Alignment
+
+Run `supabase/patches/phase11_audit_timeline_patch.sql` once in the hosted **SQL Editor** before using the live timeline on an existing project. It aligns current operational-table columns and chronological indexes while keeping RLS enabled. It creates no `audit_events` table, users, policies, or seed rows.
 
 ## Environment variables
 
@@ -143,15 +162,70 @@ Manual validation against Supabase Cloud:
 6. Sign out and confirm `/tools` redirects to `/login`.
 7. Optionally sign in as test user B and confirm user A's tools are not visible or writable.
 
+## Knowledge Source Registry CRUD (Phase 8)
+
+`/knowledge` represents AI-agent knowledge governance: it records approved source-system metadata without ingesting source contents. It loads only knowledge sources belonging to the authenticated user’s resolved default workspace. Create, status-update, and delete operations derive the workspace `project_id` internally, explicitly scope target rows, and remain independently protected by Supabase RLS.
+
+The MVP does **not** implement RAG, embeddings, vector search, file upload, document/PDF parsing, scraping, ingestion, or retrieval.
+
+Manual validation against Supabase Cloud:
+
+1. Sign in as test user A and open `/knowledge`; confirm **No knowledge sources registered yet.** appears when the workspace is empty.
+2. Add **Support Playbook**, select **Internal Docs**, enter `https://example.com/support-playbook`, and leave status active. The UI label maps to the normalized value `internal_docs`.
+3. Confirm it appears as **Internal Docs**, then inspect **Table Editor → knowledge_sources** and verify `source_type = internal_docs` along with its title, URL, status, and resolved workspace `project_id`.
+4. Change status to inactive and back to active; verify both changes in the UI and Cloud row.
+5. Delete the source after accepting confirmation and verify it disappears from the UI and Table Editor.
+6. Sign out and confirm `/knowledge` redirects to `/login`.
+7. Optionally sign in as test user B and confirm user A’s sources are neither visible nor writable.
+
+## Agent Run Logger Persistence (Phase 9)
+
+`/runs` records manual execution evidence for AI-agent observability. Each project-scoped run stores its agent, task, optional output, result status, execution risk level, latency, estimated cost, and timestamp. Risk is stored as the normalized value `low`, `medium`, or `high`, with `medium` selected by default. An operator may also attach one optional approved-tool step with input, output, and status; each step stores the same resolved workspace `project_id` as its parent run. This is logging only: AIMS does not execute agents or call AI APIs.
+
+Manual validation against Supabase Cloud:
+
+1. Run `supabase/patches/phase9_agent_runs_patch.sql` in the hosted SQL Editor.
+2. Sign in as test user A, create an agent if needed, and optionally register an approved tool.
+3. Open `/runs`; confirm **No agent runs logged yet.** appears when the workspace has no runs.
+4. Log **Classify refund request** with output **Refund request classified as billing issue.**, success status, medium risk, `830` ms latency, and `0.0124` USD cost.
+5. In **Table Editor → agent_runs**, verify the resolved `project_id`, selected `agent_id`, task, output, status, `risk_level = medium`, numeric latency/cost, and a single new row.
+6. Log a `needs_review` run with high risk, then log another run with an approved tool selected; verify `risk_level = high` and that its `agent_run_steps` row has the same `project_id` as the run plus the correct `run_id`, `tool_id`, `step_order = 1`, input/output, and status.
+7. Refresh and confirm rows are not duplicated. Sign out and confirm `/runs` redirects to `/login`.
+8. Optionally sign in as test user B and confirm user A’s runs and steps are not visible.
+
+## Live Dashboard Metrics (Phase 10)
+
+`/dashboard` calculates workspace observability directly from authenticated, project-scoped Supabase rows. It shows total and active agents, total and failed runs, average latency, summed estimated cost, high-risk agents, approved tools, registered knowledge sources, and the five most recent runs. Empty workspaces render zero-valued cards and a professional recent-runs empty state; query failures never fall back to demo data.
+
+Manual validation against Supabase Cloud:
+
+1. Run `supabase/patches/phase10_dashboard_metrics_patch.sql` in the hosted SQL Editor.
+2. Sign in as test user A and ensure the workspace has an agent, approved tool, knowledge source, and logged run.
+3. Open `/dashboard` and compare every card with project-filtered Table Editor or SQL counts. Verify average latency and total estimated cost.
+4. Confirm Recent runs contains at most the newest five rows with agent, status, risk, latency, cost, and timestamp.
+5. Add a run, change an agent risk/status, and toggle tool approval; revisit `/dashboard` and confirm the affected values update.
+6. Sign out and confirm `/dashboard` redirects to `/login`. Optionally verify a second user sees only their workspace metrics.
+
+## Live Audit Timeline (Phase 11)
+
+`/audit` derives a read-only operational timeline from the existing `agents`, `tools`, `knowledge_sources`, `agent_runs`, and `agent_run_steps` tables. Every source query is filtered to the resolved default project, events are combined in TypeScript, sorted newest first, and limited to 50. This is an MVP activity view—not an immutable, append-only enterprise audit log.
+
+Manual validation against Supabase Cloud:
+
+1. Run `supabase/patches/phase11_audit_timeline_patch.sql` in the hosted SQL Editor.
+2. Sign in as test user A and ensure the workspace has an agent, tool, knowledge source, run, and tool step.
+3. Open `/audit`; confirm all five event types appear newest first with the expected status, risk, latency/cost, source type, approval, and step metadata.
+4. Create an agent, then log a run with a tool step; return to `/audit` and confirm the new events appear.
+5. Sign out and confirm `/audit` redirects to `/login`. Optionally verify user B sees only their workspace events.
+
 ## Current status
 
-This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD. Knowledge sources, runs, audit history, and dashboard metrics remain deterministic demo data. No real AI APIs are called.
+This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD, and Phase 8 project-scoped knowledge-source governance CRUD, and Phase 9 manual agent-run persistence, and Phase 10 live project-scoped dashboard metrics, and Phase 11 live derived operational audit timeline. No real AI APIs are called.
 
 ## Next implementation phases
 
-1. Implement project-scoped CRUD for knowledge sources.
-2. Add manual run and run-step logging.
-3. Replace demo metrics and audit events with project-scoped queries.
-4. Verify RLS isolation with separate test users, then deploy to Vercel.
+1. Verify RLS isolation with separate test users.
+2. Add optional secure demo-data tooling if still useful.
+3. Deploy the verified application to Vercel.
 
 See the command center documents in `docs/` for the product boundary, architecture, schema rationale, phased plan, and verified resume narrative.

@@ -48,7 +48,8 @@ create table public.knowledge_sources (
   id uuid primary key default gen_random_uuid(),
   project_id uuid references public.projects(id) on delete cascade,
   title text not null,
-  source_type text,
+  source_type text default 'website'
+    constraint knowledge_sources_source_type_check check (source_type in ('website', 'pdf', 'notion', 'google_drive', 'internal_docs', 'api_docs', 'database', 'slack', 'github_repo')),
   url text,
   status text not null default 'active'
     constraint knowledge_sources_status_check check (status in ('active', 'inactive')),
@@ -63,16 +64,21 @@ create table public.agent_runs (
   output text,
   status text not null default 'success'
     constraint agent_runs_status_check check (status in ('success', 'failed', 'needs_review')),
-  latency_ms integer default 0,
-  cost_usd numeric default 0,
+  risk_level text not null default 'medium'
+    constraint agent_runs_risk_level_check check (risk_level in ('low', 'medium', 'high')),
+  latency_ms integer default 0
+    constraint agent_runs_latency_ms_check check (latency_ms >= 0),
+  cost_usd numeric default 0
+    constraint agent_runs_cost_usd_check check (cost_usd >= 0),
   created_at timestamptz default now()
 );
 
 create table public.agent_run_steps (
   id uuid primary key default gen_random_uuid(),
-  run_id uuid references public.agent_runs(id) on delete cascade,
+  project_id uuid not null references public.projects(id) on delete cascade,
+  run_id uuid not null references public.agent_runs(id) on delete cascade,
   tool_id uuid references public.tools(id) on delete set null,
-  step_order integer,
+  step_order integer not null default 1,
   input text,
   output text,
   status text not null default 'success'
@@ -86,12 +92,20 @@ create unique index projects_one_default_per_owner_idx on public.projects(owner_
   where is_default = true;
 create index projects_owner_default_idx on public.projects(owner_id, is_default);
 create index agents_project_id_idx on public.agents(project_id);
+create index agents_project_status_idx on public.agents(project_id, status);
+create index agents_project_created_at_idx on public.agents(project_id, created_at desc);
 create index tools_project_id_idx on public.tools(project_id);
+create index tools_project_created_at_idx on public.tools(project_id, created_at desc);
 create index knowledge_sources_project_id_idx on public.knowledge_sources(project_id);
+create index knowledge_sources_project_created_at_idx on public.knowledge_sources(project_id, created_at desc);
 create index agent_runs_project_id_idx on public.agent_runs(project_id);
 create index agent_runs_agent_id_idx on public.agent_runs(agent_id);
-create index agent_run_steps_run_id_idx on public.agent_run_steps(run_id);
-create index agent_run_steps_tool_id_idx on public.agent_run_steps(tool_id);
+create index agent_runs_project_status_idx on public.agent_runs(project_id, status);
+create index agent_runs_project_created_at_idx on public.agent_runs(project_id, created_at desc);
+create index if not exists agent_run_steps_project_id_idx on public.agent_run_steps(project_id);
+create index agent_run_steps_project_created_at_idx on public.agent_run_steps(project_id, created_at desc);
+create index if not exists agent_run_steps_run_id_idx on public.agent_run_steps(run_id);
+create index if not exists agent_run_steps_tool_id_idx on public.agent_run_steps(tool_id);
 
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
@@ -167,18 +181,18 @@ create policy "agent_runs_delete_owned_project" on public.agent_runs for delete 
 -- Step ownership is derived through its run and that run's project.
 create policy "agent_run_steps_select_owned_run" on public.agent_run_steps for select to authenticated
   using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())));
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
 create policy "agent_run_steps_insert_owned_run" on public.agent_run_steps for insert to authenticated
   with check (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())));
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
 create policy "agent_run_steps_update_owned_run" on public.agent_run_steps for update to authenticated
   using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())))
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())))
   with check (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())));
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
 create policy "agent_run_steps_delete_owned_run" on public.agent_run_steps for delete to authenticated
   using (exists (select 1 from public.agent_runs r join public.projects p on p.id = r.project_id
-    where r.id = run_id and p.owner_id = (select auth.uid())));
+    where r.id = agent_run_steps.run_id and r.project_id = agent_run_steps.project_id and p.owner_id = (select auth.uid())));
 
 -- Seed data is intentionally omitted. Create test rows while authenticated so RLS
 -- can associate them with a real auth.users ID.

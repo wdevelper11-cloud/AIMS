@@ -214,7 +214,7 @@
 
 **Commit:** `feat: add governed tool registry`
 
-## Phase 8 — Knowledge source registry
+## Phase 8 — Knowledge source registry ✅ Implemented
 
 **Goal:** Record which sources agents may reference without implementing RAG.
 
@@ -222,19 +222,32 @@
 
 **Acceptance criteria:**
 
-- Users can list, create, edit, and delete sources.
-- Title, source type, URL, and status are visible.
-- The UI makes clear that sources are registered, not ingested.
+- [x] Users can list, create, update status, and delete project-scoped sources.
+- [x] Title, source type, URL, and status are visible.
+- [x] Initial reads and every mutation use the resolved default project ID in addition to RLS.
+- [x] Query failures show an explicit error without demo-data fallback.
+- [x] The UI makes clear that sources are registered, not ingested.
 
 **Manual test checklist:**
 
-- Create one source of each supported type.
-- Verify URL and status validation.
-- Confirm no embedding or retrieval dependency exists.
+- [ ] Confirm the professional empty state for a workspace without sources.
+- [ ] Create Support Playbook as Internal Docs and verify its resolved `project_id` in Supabase Cloud.
+- [ ] Change status from active to inactive and back, checking the Cloud row after each update.
+- [ ] Delete the source after confirmation and verify Cloud deletion.
+- [ ] Sign out and confirm `/knowledge` redirects to `/login`; optionally verify isolation with a second user.
+- [x] Confirm no embedding, ingestion, file-upload, or retrieval dependency exists.
+
+**Phase 8 source-type repair validation:**
+
+- [x] UI option values use canonical lowercase/snake-case database values while rendering friendly labels.
+- [x] Fresh schema restricts `source_type` to the nine canonical values and defaults it to `website`.
+- [x] `supabase/patches/phase8_knowledge_source_type_patch.sql` safely normalizes existing friendly-label and prototype values without deleting rows or weakening RLS.
+- [ ] Run the patch in an existing Supabase Cloud project, create **Internal Docs**, and confirm the stored value is `internal_docs` while the UI label remains **Internal Docs**.
+- [ ] Confirm active/inactive updates, deletion, `/agents`, `/tools`, logout, and protected-route behavior still work.
 
 **Commit:** `feat: add knowledge source registry`
 
-## Phase 9 — Agent run logger
+## Phase 9 — Agent run logger ✅ Implemented
 
 **Goal:** Deliver the primary demo feature: auditable agent executions.
 
@@ -242,19 +255,27 @@
 
 **Acceptance criteria:**
 
-- Users can log agent, task, output, status, latency, cost, and risk.
-- A run detail page displays ordered steps.
-- Run forms permit only agents from the current project.
+- [x] `/runs` lists live runs filtered to the resolved default project with agent names mapped from a separately scoped query.
+- [x] Users can manually log agent, task, output, status, normalized execution risk, non-negative latency, and non-negative estimated cost.
+- [x] Users can attach one optional approved-tool step; no agent execution or workflow builder is included.
+- [x] Agent and tool choices come only from the current project, and RLS independently enforces ownership.
+- [x] Query failures render an explicit error without demo fallback.
+- [x] The non-destructive Phase 9 Cloud patch aligns tables, indexes, constraints, RLS, and authenticated-owner policies.
 
 **Manual test checklist:**
 
-- Log success, failure, and review-required runs.
-- Add multiple ordered steps and refresh the detail page.
-- Attempt negative latency/cost and a foreign agent ID; confirm rejection.
+- [ ] Run `supabase/patches/phase9_agent_runs_patch.sql` in Supabase Cloud SQL Editor.
+- [ ] Log success, failure, and review-required runs; confirm each value and resolved `project_id` in Table Editor.
+- [ ] Confirm a default selection stores `risk_level = medium`, a high-risk selection stores `risk_level = high`, and the table renders each risk badge.
+- [ ] Attempt negative/fractional latency and negative cost; confirm client and database rejection.
+- [ ] Add an optional approved-tool step and verify its `project_id` matches the parent run’s workspace and stores canonical `step_order = 1` along with its `run_id`, `tool_id`, input/output, and status.
+- [ ] Confirm optional step insertion produces no legacy `name`, `step_number`, or `project_id` NOT NULL errors after applying the Phase 9 patch.
+- [ ] Refresh without duplicating rows; verify logout protection and optional cross-user RLS isolation.
+- [ ] Confirm `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/login`, logout, topbar, and default-workspace behavior are unchanged.
 
 **Commit:** `feat: implement agent execution logging`
 
-## Phase 10 — Dashboard metrics
+## Phase 10 — Dashboard metrics ✅ Implemented
 
 **Goal:** Summarize agent operations from real project records.
 
@@ -262,19 +283,24 @@
 
 **Acceptance criteria:**
 
-- Display total/active agents, total/failed runs, average latency, total estimated cost, high-risk agents, and approved tools.
-- Empty datasets return zero rather than errors.
-- Values update after relevant records change.
+- [x] Display live total/active agents, total/failed runs, average latency, estimated cost, high-risk agents, approved tools, and knowledge sources.
+- [x] Every dashboard query explicitly filters by the resolved default `project_id` and remains protected by RLS.
+- [x] Display the newest five live runs with agent, status, risk, latency, cost, and timestamp.
+- [x] Empty datasets return zero cards and a recent-runs empty state; query errors show no demo fallback.
+- [x] The Phase 10 patch aligns metric dependencies, defaults, constraints, indexes, and RLS without deleting or seeding data.
 
 **Manual test checklist:**
 
-- Compare every card with manual database counts.
-- Add a failed run and confirm totals update.
-- Verify cost formatting and average-latency units.
+- [ ] Run `supabase/patches/phase10_dashboard_metrics_patch.sql` in Supabase Cloud SQL Editor.
+- [ ] Compare every card with project-scoped SQL counts, average latency, and summed cost.
+- [ ] Confirm recent runs shows at most the newest five project rows in correct order.
+- [ ] Add a run, change agent status/risk, and toggle approval; verify affected dashboard values update.
+- [ ] Confirm an empty workspace shows zeros, logout protects `/dashboard`, and a second user sees only their workspace.
+- [ ] Confirm Agents, Tools, Knowledge, Runs, and optional tool-step logging remain operational.
 
 **Commit:** `feat: add agent operations metrics`
 
-## Phase 11 — Audit timeline
+## Phase 11 — Audit timeline ✅ Implemented
 
 **Goal:** Provide a chronological view of operational events.
 
@@ -282,15 +308,20 @@
 
 **Acceptance criteria:**
 
-- Newest runs appear first.
-- Each event shows agent, task, status, timestamp, latency, cost, and run-time risk.
-- Each event links to run details.
+- [x] Derive events from agents, tools, knowledge sources, runs, and run steps without creating an `audit_events` table.
+- [x] Scope every query to the resolved default project, combine in TypeScript, sort newest first, and limit to 50.
+- [x] Show event title, description, timestamp, status, risk, and relevant metadata in a responsive timeline.
+- [x] Show explicit empty and query-error states without demo fallback.
+- [x] The Phase 11 patch aligns timeline dependencies and chronological indexes while preserving RLS and data.
 
 **Manual test checklist:**
 
-- Add runs at different times and verify ordering.
-- Confirm all required fields are readable on mobile.
-- Open an event and inspect its steps.
+- [ ] Run `supabase/patches/phase11_audit_timeline_patch.sql` in Supabase Cloud SQL Editor.
+- [ ] Confirm all five event types appear and are ordered newest first.
+- [ ] Create an agent and log a run with a tool step; confirm new timeline events appear.
+- [ ] Confirm an empty workspace shows the audit empty state and query failures show the live error state.
+- [ ] Verify logout protection and optional cross-user RLS isolation.
+- [ ] Confirm Dashboard, Agents, Tools, Knowledge, Runs, and optional tool-step logging remain operational.
 
 **Commit:** `feat: add agent run audit timeline`
 
