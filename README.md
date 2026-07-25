@@ -18,7 +18,7 @@ AIMS provides a project-scoped operational workspace for agent inventory, govern
 - Agent, tool, knowledge-source, and run registries backed by typed demo data
 - Chronological audit timeline with status, risk, cost, and latency
 - Supabase Cloud browser-client foundation
-- Complete seven-table Postgres schema with constraints, triggers, and RLS
+- Complete seven-table Postgres schema with constraints, foreign-key indexes, and RLS
 
 ## Tech stack
 
@@ -49,12 +49,15 @@ The current UI reads only `lib/demo-data.ts`. Supabase connectivity, authenticat
 | `/runs` | Execution log | Static demo data |
 | `/audit` | Chronological audit history | Static demo data |
 
-## Supabase Cloud setup
+## Supabase Cloud Setup
 
-1. Create a hosted Supabase project at Supabase Cloud. Do not initialize local Supabase.
-2. Open its SQL Editor and run `supabase/schema.sql` once. The SQL creates profiles, projects, agents, tools, knowledge sources, agent runs, and run steps; enables RLS; and installs project-isolation policies.
-3. Copy `.env.example` to `.env.local` and fill in the public project values.
-4. Do not place the service-role key in this application.
+1. Create a hosted project in the [Supabase Cloud dashboard](https://supabase.com/dashboard). Local Supabase is intentionally not used by AIMS.
+2. In **Project Settings → API**, copy the project URL and public anon/publishable key.
+3. Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to those public values.
+4. Open the Cloud project's **SQL Editor**, paste the complete contents of `supabase/schema.sql`, and run it once in a new project.
+5. In **Table Editor**, confirm that Row Level Security is enabled for all seven public tables and that each table has authenticated-user policies.
+
+Never put a Supabase service-role key in `.env.local` or frontend code. It bypasses RLS and is not needed by this application. No Supabase CLI, local Supabase stack, or Docker service is required.
 
 The schema is available both as executable SQL in `supabase/schema.sql` and as an explained reference in `docs/03_DATABASE_SCHEMA.md`.
 
@@ -78,7 +81,7 @@ Then open `http://localhost:3000`. Production deployment can use Vercel with the
 
 ## Current status
 
-This repository contains the initial runnable skeleton only. All visible records and metrics are deterministic demo data. Buttons are intentionally non-functional, authentication is not implemented, pages do not query Supabase, and no real AI APIs are called.
+This repository contains the runnable UI skeleton and the Phase 3 Supabase Cloud schema/RLS boundary. All visible records and metrics remain deterministic demo data. Buttons are intentionally non-functional, authentication is not implemented, pages do not query Supabase, and no real AI APIs are called.
 
 ## Next implementation phases
 
