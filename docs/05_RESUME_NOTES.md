@@ -14,6 +14,7 @@ AIMS is a full-stack AI Agent Operations Control Plane that centralizes agent in
 - Designed project-scoped Supabase Postgres tables and Row Level Security policies to enforce tenant isolation at the database layer rather than relying on frontend filters.
 - Implemented execution observability with run status, step-level traces, latency, estimated cost, risk snapshots, failure tracking, and a chronological audit timeline.
 - Developed an operational dashboard in Next.js and TypeScript that aggregates active agents, failed runs, average latency, estimated cost, high-risk agents, and approved tools.
+- Implemented authenticated, project-scoped agent inventory CRUD through Supabase Cloud, combining explicit workspace filters with Postgres RLS authorization.
 
 Use the strongest three bullets that match the role and only claim features that are working in the deployed build.
 
@@ -45,6 +46,7 @@ Use the strongest three bullets that match the role and only claim features that
 - Database constraints for enumerated states and non-negative metrics
 - Cross-project reference protection through composite foreign keys
 - Privilege-limited demo seed function
+- Project-scoped agent reads, inserts, status updates, and deletes through the user's RLS-limited session
 
 ## Demo explanation
 
