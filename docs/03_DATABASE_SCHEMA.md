@@ -18,6 +18,8 @@
 
 All primary keys are UUIDs. A profile's key references `auth.users`; the other tables use `gen_random_uuid()`. Project deletion cascades through its direct children, run deletion cascades through its steps, and deletion of an agent or tool preserves historical records by setting the optional reference to `null`.
 
+`projects.owner_id` is unique because the current product supports exactly one workspace per authenticated user. This also prevents repeated or concurrent first-page resolution from creating duplicate default projects. The application creates missing profile and project rows from the protected server layout; no auth trigger or service-role client is required.
+
 ## Controlled values
 
 - Agent `status`: `active`, `paused`, `archived`

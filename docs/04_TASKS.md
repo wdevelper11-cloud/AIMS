@@ -120,21 +120,25 @@
 
 ## Phase 5 — Default project/workspace logic
 
+**Status:** Implemented — Cloud record creation and refresh/re-login reuse remain manual checks in the target project.
+
 **Goal:** Resolve one private default workspace for every authenticated user.
 
-**Files likely touched:** `lib/queries/projects.ts`, `app/(dashboard)/layout.tsx`, `components/workspace-header.tsx`
+**Files touched:** `lib/workspace.ts`, `app/(protected)/layout.tsx`, `components/layout/**`, `supabase/schema.sql`, documentation
 
 **Acceptance criteria:**
 
-- Signup trigger creates a profile and default project.
-- Dashboard layout loads the current user's default project.
-- Missing-project state fails clearly instead of querying unscoped data.
+- [x] The protected server layout creates a missing profile and default project through the authenticated RLS session.
+- [x] Existing records are reused and a unique project-owner constraint prevents duplicates.
+- [x] The top bar displays the resolved workspace name and signed-in email.
+- [x] Resolution failures render a clear error state instead of unscoped demo pages.
 
 **Manual test checklist:**
 
-- Sign up a fresh account and inspect its profile/project rows.
-- Confirm existing users see only their own project.
-- Tamper with a project ID and confirm RLS rejects access.
+- [ ] Sign up a fresh account, visit `/dashboard`, and inspect its profile/project rows in Supabase Cloud.
+- [ ] Refresh and sign out/in; confirm row IDs are unchanged and no duplicate project exists.
+- [ ] Confirm existing users see only their own project and the top bar shows their email and workspace.
+- [ ] Tamper with a project owner ID and confirm RLS rejects the write.
 
 **Commit:** `feat: add default user workspace`
 

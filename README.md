@@ -19,6 +19,7 @@ AIMS provides a project-scoped operational workspace for agent inventory, govern
 - Chronological audit timeline with status, risk, cost, and latency
 - Supabase Cloud cookie-backed browser/server auth clients
 - Protected application routes, persistent sessions, and logout
+- Automatic RLS-safe profile and default workspace resolution
 - Complete seven-table Postgres schema with constraints, foreign-key indexes, and RLS
 
 ## Tech stack
@@ -92,16 +93,29 @@ Then open `http://localhost:3000`. Production deployment can use Vercel with the
 
 Middleware protects `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/runs`, and `/audit`. It also refreshes valid Supabase sessions. Authentication uses only the project URL and public anon/publishable key; authorization of future database queries remains enforced by RLS.
 
+## Default workspace resolution
+
+The protected server layout resolves the authenticated account before rendering any operational page. Using the user's cookie-backed Supabase session and public anon/publishable key, it reads or creates a `profiles` row with the `student` role, then reads the latest owned project or creates **AIMS Workspace** with the description **Default AI agent operations workspace**. Existing records are reused on refresh and future sign-ins. A unique owner constraint prevents concurrent first-page requests from creating multiple projects, while RLS permits inserts only when the profile ID or project owner matches `auth.uid()`.
+
+To verify this against Supabase Cloud:
+
+1. Apply the current `supabase/schema.sql` in the Cloud SQL Editor and configure the two public environment variables.
+2. Create or sign in as a real test user, then visit `/dashboard`.
+3. In **Table Editor → profiles**, confirm one row has `id` equal to the Authentication user's ID and `role` equal to `student`.
+4. In **Table Editor → projects**, confirm one row has that user ID as `owner_id`, `AIMS Workspace` as its name, and the default description.
+5. Refresh and sign out/in; confirm the same row IDs remain and the top bar shows the workspace name and email.
+
+Existing Cloud projects created from the Phase 3 schema should add the new unique owner constraint (after resolving any pre-existing duplicate owner rows) or apply the current schema to a new project.
+
 ## Current status
 
-This repository contains the runnable UI skeleton, the Phase 3 Supabase Cloud schema/RLS boundary, and Phase 4 authentication with protected routes. All operational records and metrics remain deterministic demo data. CRUD buttons are intentionally non-functional, pages do not query Supabase for operational data, and no real AI APIs are called.
+This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, and Phase 5 profile/default-workspace resolution. All operational records and metrics remain deterministic demo data. CRUD buttons are intentionally non-functional, pages do not query Supabase for operational data, and no real AI APIs are called.
 
 ## Next implementation phases
 
-1. Resolve the authenticated user's default project.
-2. Implement project-scoped CRUD for agents, tools, and knowledge sources.
-3. Add manual run and run-step logging.
-4. Replace demo metrics and audit events with project-scoped queries.
-5. Verify RLS isolation with separate test users, then deploy to Vercel.
+1. Implement project-scoped CRUD for agents, tools, and knowledge sources.
+2. Add manual run and run-step logging.
+3. Replace demo metrics and audit events with project-scoped queries.
+4. Verify RLS isolation with separate test users, then deploy to Vercel.
 
 See the command center documents in `docs/` for the product boundary, architecture, schema rationale, phased plan, and verified resume narrative.

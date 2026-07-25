@@ -12,7 +12,7 @@ create table public.profiles (
 
 create table public.projects (
   id uuid primary key default gen_random_uuid(),
-  owner_id uuid references auth.users(id) on delete cascade,
+  owner_id uuid unique references auth.users(id) on delete cascade,
   name text not null,
   description text,
   created_at timestamptz default now()
