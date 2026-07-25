@@ -12,6 +12,7 @@ export type Project = {
   owner_id: string;
   name: string;
   description: string | null;
+  is_default: boolean;
   created_at: string;
 };
 
@@ -52,13 +53,7 @@ export async function resolveWorkspace(): Promise<Workspace | null> {
     profile = data;
   }
 
-  const { data: existingProject, error: projectReadError } = await supabase
-    .from("projects")
-    .select("id, owner_id, name, description, created_at")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<Project>();
+  const { data: existingProject, error: projectReadError } = await getDefaultProject(user.id);
 
   if (projectReadError) throw resolutionError("workspace", projectReadError.message);
 
@@ -70,8 +65,27 @@ export async function resolveWorkspace(): Promise<Workspace | null> {
         owner_id: user.id,
         name: "AIMS Workspace",
         description: "Default AI agent operations workspace",
+        is_default: true,
       })
-      .select("id, owner_id, name, description, created_at")
+      .select("id, owner_id, name, description, is_default, created_at")
+      .single<Project>();
+
+    if (error) {
+      // A concurrent protected request may have won the unique-index race.
+      const { data: concurrentProject, error: retryError } = await getDefaultProject(user.id);
+      if (retryError || !concurrentProject) throw resolutionError("workspace", error.message);
+      project = concurrentProject;
+    } else {
+      project = data;
+    }
+  }
+
+  if (project.name !== "AIMS Workspace" || project.description !== "Default AI agent operations workspace") {
+    const { data, error } = await supabase
+      .from("projects")
+      .update({ name: "AIMS Workspace", description: "Default AI agent operations workspace" })
+      .eq("id", project.id)
+      .select("id, owner_id, name, description, is_default, created_at")
       .single<Project>();
 
     if (error) throw resolutionError("workspace", error.message);
@@ -84,8 +98,18 @@ export async function resolveWorkspace(): Promise<Workspace | null> {
 function resolutionError(record: string, detail: string) {
   const schemaMismatch = /column|relation|schema cache|does not exist/i.test(detail);
   const guidance = schemaMismatch
-    ? " Your Supabase Cloud schema is not aligned with the repository schema. Run `supabase/patches/phase5_profile_project_patch.sql` in Supabase SQL Editor."
+    ? " Your Supabase Cloud schema is not aligned with the repository schema. Run `supabase/patches/phase5_default_workspace_dedupe_patch.sql` in Supabase SQL Editor."
     : "";
 
   return new WorkspaceResolutionError(`Could not resolve your ${record}.${guidance} ${detail}`);
+}
+
+function getDefaultProject(ownerId: string) {
+  return createServerClient()
+    .from("projects")
+    .select("id, owner_id, name, description, is_default, created_at")
+    .eq("owner_id", ownerId)
+    .eq("is_default", true)
+    .limit(1)
+    .maybeSingle<Project>();
 }

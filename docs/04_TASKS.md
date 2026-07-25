@@ -129,23 +129,26 @@
 **Acceptance criteria:**
 
 - [x] The protected server layout creates a missing profile and default project through the authenticated RLS session.
-- [x] Existing profile and latest project records are reused on refresh and re-login.
+- [x] The single `is_default = true` project is reused on refresh and re-login.
 - [x] The top bar displays the resolved workspace name and signed-in email.
 - [x] Resolution failures render a clear error state instead of unscoped demo pages.
 
 **Manual test checklist:**
 
 - [ ] Sign up a fresh account, visit `/dashboard`, and inspect its profile/project rows in Supabase Cloud.
-- [ ] Refresh and sign out/in; confirm row IDs are unchanged and no duplicate project exists.
+- [ ] Confirm exactly one project per owner has `is_default = true`, the required name, and the required description.
+- [ ] Confirm older duplicate rows have `is_default = false` and were not deleted.
+- [ ] Refresh three times and sign out/in; confirm the default project ID is unchanged and no duplicate default exists.
 - [ ] Confirm existing users see only their own project and the top bar shows their email and workspace.
 - [ ] Tamper with a project owner ID and confirm RLS rejects the write.
 
 **Schema alignment validation:**
 
-- [ ] If the Cloud database was created before Phase 5, run `supabase/patches/phase5_profile_project_patch.sql` in Supabase SQL Editor.
+- [ ] For older or duplicated Phase 5 data, run `supabase/patches/phase5_default_workspace_dedupe_patch.sql` once in Supabase SQL Editor.
 - [ ] Confirm `profiles.role`, `profiles.full_name`, and `profiles.created_at` exist; the workspace helper no longer selects `profiles.role` during resolution.
 - [ ] Sign in, visit `/dashboard`, and confirm profile/default-project creation succeeds without a workspace error.
-- [ ] Refresh and sign in again, confirming the existing project is reused.
+- [ ] Confirm the partial unique index rejects a second `is_default = true` project for the same owner.
+- [ ] Refresh and sign in again, confirming the same default project is reused.
 
 **Commit:** `feat: add default user workspace`
 

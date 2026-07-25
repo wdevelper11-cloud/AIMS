@@ -85,7 +85,7 @@ Every business row contains a `project_id`. RLS checks whether the current authe
 
 ### 6. How is the default project created?
 
-The protected Next.js server layout resolves the authenticated user, then inserts a missing profile and default project through the user's ordinary Supabase session. RLS checks ownership, and a unique owner constraint prevents duplicate workspaces without a service-role key.
+The protected Next.js server layout resolves the authenticated user, then inserts a missing profile and default project through the user's ordinary Supabase session. RLS checks ownership, while a partial unique index permits only one `is_default = true` workspace per owner without a service-role key.
 
 ### 7. Why store a risk level on a run when the agent already has one?
 

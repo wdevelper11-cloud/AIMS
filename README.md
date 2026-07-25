@@ -56,7 +56,7 @@ Authentication is connected to Supabase Cloud. Operational records still read on
 1. Create a hosted project in the [Supabase Cloud dashboard](https://supabase.com/dashboard). Local Supabase is intentionally not used by AIMS.
 2. In **Project Settings → API**, copy the project URL and public anon/publishable key.
 3. Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to those public values.
-4. For a fresh Cloud project, open **SQL Editor**, paste the complete contents of `supabase/schema.sql`, and run it once. For an existing project created from an older AIMS schema, run `supabase/patches/phase5_profile_project_patch.sql` instead.
+4. For a fresh Cloud project, open **SQL Editor**, paste the complete contents of `supabase/schema.sql`, and run it once. For an existing project with older Phase 5 data, run `supabase/patches/phase5_default_workspace_dedupe_patch.sql` once instead.
 5. In **Table Editor**, confirm that Row Level Security is enabled for all seven public tables and that each table has authenticated-user policies.
 6. In **Authentication → Providers**, keep the Email provider enabled. Choose whether email confirmation is required for your project; AIMS supports either setting.
 
@@ -95,17 +95,17 @@ Middleware protects `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/runs`, an
 
 ## Default workspace resolution
 
-The protected server layout resolves the authenticated account before rendering any operational page. Using the user's cookie-backed Supabase session and public anon/publishable key, it reads or creates a `profiles` row, then reads the latest owned project or creates **AIMS Workspace** with the description **Default AI agent operations workspace**. Existing records are reused on refresh and future sign-ins. The profile query intentionally does not select `role`; fresh databases apply its `student` default, while older Cloud schemas can be aligned without blocking login. RLS permits inserts only when the profile ID or project owner matches `auth.uid()`.
+The protected server layout resolves the authenticated account before rendering any operational page. Using the user's cookie-backed Supabase session and public anon/publishable key, it reads or creates a `profiles` row, then queries the owned project where `is_default = true`. If none exists, it creates **AIMS Workspace** with the description **Default AI agent operations workspace** and `is_default = true`. Existing records are reused on refresh and future sign-ins. A partial unique index permits only one default per owner, and the helper recovers when concurrent requests race to create it. RLS permits inserts only when the project owner matches `auth.uid()`.
 
 To verify this against Supabase Cloud:
 
-1. For a fresh project, apply `supabase/schema.sql`. If the Cloud database predates Phase 5, apply `supabase/patches/phase5_profile_project_patch.sql` instead, then configure the two public environment variables.
+1. For a fresh project, apply `supabase/schema.sql`. If the Cloud database contains older Phase 5 project rows, apply `supabase/patches/phase5_default_workspace_dedupe_patch.sql` once, then configure the two public environment variables.
 2. Create or sign in as a real test user, then visit `/dashboard`.
 3. In **Table Editor → profiles**, confirm one row has `id` equal to the Authentication user's ID and `role` equal to `student`.
-4. In **Table Editor → projects**, confirm one row has that user ID as `owner_id`, `AIMS Workspace` as its name, and the default description.
+4. In **Table Editor → projects**, confirm exactly one row for that owner has `is_default = true`, `AIMS Workspace` as its name, and the default description. Older duplicate rows must have `is_default = false`.
 5. Refresh and sign out/in; confirm the same row IDs remain and the top bar shows the workspace name and email.
 
-The Phase 5 patch adds missing `profiles.role`, `profiles.full_name`, and timestamp columns, aligns commonly missing project columns, and re-enables RLS. It is safe and non-destructive: it does not drop tables, delete user data, create users, or add anonymous policies. The workspace helper no longer depends on `profiles.role`, but applying the patch keeps the Cloud schema aligned with the repository for future phases.
+The dedupe patch adds `projects.is_default`, keeps the earliest project per owner as the normalized default, marks every later duplicate non-default without deleting it, and creates the partial unique index. It also aligns missing profile columns and keeps RLS enabled. The patch is safe and non-destructive: it does not drop tables, delete user data, create users, or add anonymous policies.
 
 ## Current status
 

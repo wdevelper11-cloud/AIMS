@@ -18,6 +18,8 @@ alter table public.projects
 alter table public.projects
   add column if not exists description text;
 alter table public.projects
+  add column if not exists is_default boolean not null default true;
+alter table public.projects
   add column if not exists created_at timestamptz default now();
 
 create index if not exists projects_owner_id_idx on public.projects(owner_id);

@@ -9,7 +9,7 @@
 | Table | Purpose | Ownership path |
 |---|---|---|
 | `profiles` | Authenticated user's application profile (`full_name`, `role`) | `profiles.id = auth.uid()` |
-| `projects` | User-owned AIMS workspaces | `projects.owner_id = auth.uid()` |
+| `projects` | User-owned AIMS workspaces with an `is_default` marker | `projects.owner_id = auth.uid()` |
 | `agents` | Agent inventory, model, lifecycle status, and risk | `agents.project_id -> projects.id` |
 | `tools` | Approved-tool inventory and risk | `tools.project_id -> projects.id` |
 | `knowledge_sources` | Registered source metadata (not ingestion) | `knowledge_sources.project_id -> projects.id` |
@@ -18,13 +18,13 @@
 
 All primary keys are UUIDs. A profile's key references `auth.users`; the other tables use `gen_random_uuid()`. Project deletion cascades through its direct children, run deletion cascades through its steps, and deletion of an agent or tool preserves historical records by setting the optional reference to `null`.
 
-The application reuses the latest project owned by the authenticated user and creates a default only when none exists. It creates missing profile and project rows from the protected server layout; no auth trigger or service-role client is required.
+The application queries the project owned by the authenticated user where `is_default = true` and creates it only when none exists. `projects_one_default_per_owner_idx` is a partial unique index on `owner_id` for default rows, so the database prevents two default workspaces for one owner while preserving non-default historical rows. `projects_owner_default_idx` supports the resolution query. No auth trigger or service-role client is required.
 
 ## Existing Supabase Cloud project patch
 
-`supabase/patches/phase5_profile_project_patch.sql` is the source of truth for aligning a Cloud database created from an older AIMS schema. Run it in the hosted project's **SQL Editor** instead of resetting the database. It uses `add column if not exists` for missing profile and project fields, including `profiles.role`, and ensures RLS remains enabled.
+`supabase/patches/phase5_default_workspace_dedupe_patch.sql` is the source of truth for aligning a Cloud database with older or duplicated Phase 5 workspace data. Run it once in the hosted project's **SQL Editor** instead of resetting the database. It adds `is_default`, keeps the earliest row for each owner as the canonical default with the required name and description, marks later rows non-default, and installs the unique partial index.
 
-The patch is non-destructive: it does not drop tables, delete rows, create fake users, weaken ownership checks, or add anonymous policies. The Phase 5 workspace query also avoids selecting `profiles.role`, so that optional application metadata cannot prevent workspace resolution while an older Cloud project is being aligned. A missing fundamental table or another schema mismatch still produces an actionable error in the protected layout.
+The patch is non-destructive: it does not drop tables, delete rows, create fake users, weaken ownership checks, or add anonymous policies. It also aligns missing profile fields and ensures RLS remains enabled. A missing fundamental table or another schema mismatch still produces an actionable error in the protected layout.
 
 ## Controlled values
 
