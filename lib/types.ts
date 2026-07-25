@@ -2,6 +2,7 @@ export type AgentStatus = "active" | "inactive" | "paused";
 export type RiskLevel = "low" | "medium" | "high";
 export type AgentRegistryStatus = "active" | "paused" | "archived";
 export type RunStatus = "success" | "failed" | "needs_review";
+export type AgentRunStatus = RunStatus;
 
 export interface Agent {
   id: string;
@@ -85,6 +86,32 @@ export interface AgentRun {
   riskLevel: RiskLevel;
   createdAt: string;
 }
+
+export interface DatabaseAgentRun {
+  id: string;
+  project_id: string;
+  agent_id: string | null;
+  task: string;
+  output: string | null;
+  status: AgentRunStatus;
+  latency_ms: number;
+  cost_usd: number;
+  created_at: string;
+}
+
+export interface DatabaseAgentRunStep {
+  id: string;
+  run_id: string;
+  tool_id: string | null;
+  step_order: number | null;
+  input: string | null;
+  output: string | null;
+  status: AgentRunStatus;
+  created_at: string;
+}
+
+export type AgentOption = Pick<DatabaseAgent, "id" | "name">;
+export type ToolOption = Pick<DatabaseTool, "id" | "name">;
 
 export interface DashboardMetric {
   label: string;

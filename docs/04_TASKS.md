@@ -247,7 +247,7 @@
 
 **Commit:** `feat: add knowledge source registry`
 
-## Phase 9 — Agent run logger
+## Phase 9 — Agent run logger ✅ Implemented
 
 **Goal:** Deliver the primary demo feature: auditable agent executions.
 
@@ -255,15 +255,21 @@
 
 **Acceptance criteria:**
 
-- Users can log agent, task, output, status, latency, cost, and risk.
-- A run detail page displays ordered steps.
-- Run forms permit only agents from the current project.
+- [x] `/runs` lists live runs filtered to the resolved default project with agent names mapped from a separately scoped query.
+- [x] Users can manually log agent, task, output, status, non-negative latency, and non-negative estimated cost.
+- [x] Users can attach one optional approved-tool step; no agent execution or workflow builder is included.
+- [x] Agent and tool choices come only from the current project, and RLS independently enforces ownership.
+- [x] Query failures render an explicit error without demo fallback.
+- [x] The non-destructive Phase 9 Cloud patch aligns tables, indexes, constraints, RLS, and authenticated-owner policies.
 
 **Manual test checklist:**
 
-- Log success, failure, and review-required runs.
-- Add multiple ordered steps and refresh the detail page.
-- Attempt negative latency/cost and a foreign agent ID; confirm rejection.
+- [ ] Run `supabase/patches/phase9_agent_runs_patch.sql` in Supabase Cloud SQL Editor.
+- [ ] Log success, failure, and review-required runs; confirm each value and resolved `project_id` in Table Editor.
+- [ ] Attempt negative/fractional latency and negative cost; confirm client and database rejection.
+- [ ] Add an optional approved-tool step and verify its `run_id`, `tool_id`, order, input/output, and status.
+- [ ] Refresh without duplicating rows; verify logout protection and optional cross-user RLS isolation.
+- [ ] Confirm `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/login`, logout, topbar, and default-workspace behavior are unchanged.
 
 **Commit:** `feat: implement agent execution logging`
 

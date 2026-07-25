@@ -18,7 +18,7 @@ AIMS provides a project-scoped operational workspace for agent inventory, govern
 - Live agent registry with create, status update, and delete operations
 - Live governed tool registry with create, approval, risk, and delete operations
 - Live knowledge-source governance registry with create, status update, and delete operations
-- Run registry backed by typed demo data
+- Live manual agent-run logger with status, latency, estimated cost, output, and optional tool-step persistence
 - Chronological audit timeline with status, risk, cost, and latency
 - Supabase Cloud cookie-backed browser/server auth clients
 - Protected application routes, persistent sessions, and logout
@@ -39,7 +39,7 @@ No custom API server, ORM, local Supabase stack, AI runtime, or vector database 
 
 Next.js is the application and presentation layer. Supabase Cloud is the only planned backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
 
-Authentication and the agent, tool, and knowledge-source registries are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. Other operational pages and dashboard metrics still use `lib/demo-data.ts` and remain deferred to later phases.
+Authentication and the agent, tool, knowledge-source, and run registries are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. Other operational pages and dashboard metrics still use `lib/demo-data.ts` and remain deferred to later phases.
 
 ## Routes
 
@@ -51,7 +51,7 @@ Authentication and the agent, tool, and knowledge-source registries are connecte
 | `/agents` | Agent registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/tools` | Governed tool registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/knowledge` | Knowledge-source governance registry | Protected; live Supabase CRUD scoped to the default workspace |
-| `/runs` | Execution log | Protected; static demo data |
+| `/runs` | Manual execution logger | Protected; live Supabase persistence scoped to the default workspace |
 | `/audit` | Chronological audit history | Protected; static demo data |
 
 ## Supabase Cloud Setup
@@ -78,6 +78,10 @@ The patch is safe and non-destructive: it uses conditional column, constraint, a
 Knowledge source types use normalized database values—`website`, `pdf`, `notion`, `google_drive`, `internal_docs`, `api_docs`, `database`, `slack`, and `github_repo`—while the UI displays friendly labels such as **Google Drive**, **Internal Docs**, and **GitHub Repo**.
 
 If an existing Cloud project rejects a source type or still stores friendly labels, run `supabase/patches/phase8_knowledge_source_type_patch.sql` once in the hosted **SQL Editor**. The patch removes the outdated type constraint, normalizes existing friendly labels and earlier prototype values, restores the canonical type and status constraints, sets `website` as the default type, and keeps RLS enabled. It preserves all rows and adds no policies or privileged credentials.
+
+### Phase 9 Existing Supabase Cloud Alignment
+
+Before using the live Run Logger on an existing hosted project, run `supabase/patches/phase9_agent_runs_patch.sql` once in the Supabase Cloud **SQL Editor**. The non-destructive patch aligns `agent_runs` and `agent_run_steps` columns, defaults, constraints, indexes, RLS, and strict authenticated-owner policies without deleting or seeding data.
 
 ## Environment variables
 
@@ -166,14 +170,29 @@ Manual validation against Supabase Cloud:
 6. Sign out and confirm `/knowledge` redirects to `/login`.
 7. Optionally sign in as test user B and confirm user A’s sources are neither visible nor writable.
 
+## Agent Run Logger Persistence (Phase 9)
+
+`/runs` records manual execution evidence for AI-agent observability. Each project-scoped run stores its agent, task, optional output, result status, latency, estimated cost, and timestamp. An operator may also attach one optional approved-tool step with input, output, and status. This is logging only: AIMS does not execute agents or call AI APIs.
+
+Manual validation against Supabase Cloud:
+
+1. Run `supabase/patches/phase9_agent_runs_patch.sql` in the hosted SQL Editor.
+2. Sign in as test user A, create an agent if needed, and optionally register an approved tool.
+3. Open `/runs`; confirm **No agent runs logged yet.** appears when the workspace has no runs.
+4. Log **Classify refund request** with output **Refund request classified as billing issue.**, success status, `830` ms latency, and `0.0124` USD cost.
+5. In **Table Editor → agent_runs**, verify the resolved `project_id`, selected `agent_id`, task, output, status, numeric latency/cost, and a single new row.
+6. Log a `needs_review` run, then log another run with an approved tool selected; verify its `agent_run_steps` row has the correct `run_id`, `tool_id`, order, input/output, and status.
+7. Refresh and confirm rows are not duplicated. Sign out and confirm `/runs` redirects to `/login`.
+8. Optionally sign in as test user B and confirm user A’s runs and steps are not visible.
+
 ## Current status
 
-This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD, and Phase 8 project-scoped knowledge-source governance CRUD. Runs, audit history, and dashboard metrics remain deterministic demo data. No real AI APIs are called.
+This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD, and Phase 8 project-scoped knowledge-source governance CRUD, and Phase 9 manual agent-run persistence. Audit history and dashboard metrics remain deterministic demo data. No real AI APIs are called.
 
 ## Next implementation phases
 
-1. Add manual run and run-step logging.
-2. Replace demo metrics and audit events with project-scoped queries.
+1. Replace demo dashboard metrics with project-scoped queries.
+2. Replace demo audit events with a project-scoped timeline.
 3. Verify RLS isolation with separate test users, then deploy to Vercel.
 
 See the command center documents in `docs/` for the product boundary, architecture, schema rationale, phased plan, and verified resume narrative.

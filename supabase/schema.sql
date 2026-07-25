@@ -64,8 +64,10 @@ create table public.agent_runs (
   output text,
   status text not null default 'success'
     constraint agent_runs_status_check check (status in ('success', 'failed', 'needs_review')),
-  latency_ms integer default 0,
-  cost_usd numeric default 0,
+  latency_ms integer default 0
+    constraint agent_runs_latency_ms_check check (latency_ms >= 0),
+  cost_usd numeric default 0
+    constraint agent_runs_cost_usd_check check (cost_usd >= 0),
   created_at timestamptz default now()
 );
 
