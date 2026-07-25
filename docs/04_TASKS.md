@@ -129,7 +129,7 @@
 **Acceptance criteria:**
 
 - [x] The protected server layout creates a missing profile and default project through the authenticated RLS session.
-- [x] Existing records are reused and a unique project-owner constraint prevents duplicates.
+- [x] Existing profile and latest project records are reused on refresh and re-login.
 - [x] The top bar displays the resolved workspace name and signed-in email.
 - [x] Resolution failures render a clear error state instead of unscoped demo pages.
 
@@ -139,6 +139,13 @@
 - [ ] Refresh and sign out/in; confirm row IDs are unchanged and no duplicate project exists.
 - [ ] Confirm existing users see only their own project and the top bar shows their email and workspace.
 - [ ] Tamper with a project owner ID and confirm RLS rejects the write.
+
+**Schema alignment validation:**
+
+- [ ] If the Cloud database was created before Phase 5, run `supabase/patches/phase5_profile_project_patch.sql` in Supabase SQL Editor.
+- [ ] Confirm `profiles.role`, `profiles.full_name`, and `profiles.created_at` exist; the workspace helper no longer selects `profiles.role` during resolution.
+- [ ] Sign in, visit `/dashboard`, and confirm profile/default-project creation succeeds without a workspace error.
+- [ ] Refresh and sign in again, confirming the existing project is reused.
 
 **Commit:** `feat: add default user workspace`
 
