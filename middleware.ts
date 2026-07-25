@@ -9,7 +9,13 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    return response;
+    const isProtected = protectedRoutes.some(
+      (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(`${route}/`),
+    );
+
+    return isProtected
+      ? NextResponse.redirect(new URL("/login", request.url))
+      : response;
   }
 
   const supabase = createClient(url, anonKey, {
@@ -41,14 +47,20 @@ export async function middleware(request: NextRequest) {
   );
 
   if (!user && isProtected) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return redirectWithCookies(request, response, "/login");
   }
 
   if (user && request.nextUrl.pathname === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return redirectWithCookies(request, response, "/dashboard");
   }
 
   return response;
+}
+
+function redirectWithCookies(request: NextRequest, response: NextResponse, pathname: string) {
+  const redirectResponse = NextResponse.redirect(new URL(pathname, request.url));
+  response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+  return redirectResponse;
 }
 
 export const config = {

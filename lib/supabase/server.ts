@@ -13,6 +13,9 @@ export function createServerClient() {
 
   return createClient(url, anonKey, {
     auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: true,
       storage: {
         getItem: (key) => cookieStore.get(key)?.value ?? null,
         setItem: (key, value) => {

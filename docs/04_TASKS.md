@@ -96,11 +96,11 @@
 
 ## Phase 4 — Supabase Auth
 
-**Status:** Implemented and validated in the Phase 4 codebase.
+**Status:** Implemented in the Phase 4 codebase; Cloud-project authentication remains a deployment-specific manual check.
 
 **Goal:** Implement email/password signup, login, logout, and protected routes.
 
-**Files likely touched:** `app/(auth)/login/page.tsx`, `app/(auth)/signup/page.tsx`, `app/auth/callback/route.ts`, `middleware.ts`, `lib/supabase/middleware.ts`, `components/sign-out-button.tsx`
+**Files touched:** `app/login/page.tsx`, `app/(protected)/**`, `middleware.ts`, `lib/supabase/**`, `components/layout/**`
 
 **Acceptance criteria:**
 
