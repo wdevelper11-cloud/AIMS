@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body { margin: 0; color: #0f172a; background: #f8fafc; }
+button, input { font: inherit; }
+
+@layer components {
+  .table-shell { @apply overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm; }
+  .data-table { @apply min-w-full divide-y divide-slate-200 text-left text-sm; }
+  .data-table thead { @apply bg-slate-50 text-xs uppercase tracking-wide text-slate-500; }
+  .data-table th { @apply whitespace-nowrap px-5 py-3 font-semibold; }
+  .data-table td { @apply px-5 py-4 align-top text-slate-600; }
+  .data-table tbody { @apply divide-y divide-slate-100; }
+}

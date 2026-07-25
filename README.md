@@ -1,88 +1,92 @@
 # AIMS — AI Agent Operations Control Plane
 
-AIMS is a resume-ready full-stack system for registering AI agents, governing their tools and knowledge sources, and observing executions through metrics and an audit timeline.
+AIMS is a resume-ready operations control plane for registering AI agents, governing their approved tools and knowledge sources, and observing executions through latency, estimated cost, failures, risk, and an audit trail.
 
 ## Problem
 
-As companies deploy agents across support, sales, research, finance, and engineering, they need a central view of agent ownership, tool risk, run failures, latency, cost, and review-required behavior.
+As AI agents move into support, sales, finance, research, and engineering workflows, teams often lack one place to understand what agents exist, which capabilities they can access, and how reliably they operate.
 
 ## Solution
 
-AIMS provides a secure project workspace containing an agent registry, tool governance, knowledge-source inventory, execution logs, step traces, operational metrics, and chronological audit history.
+AIMS provides a project-scoped operational workspace for agent inventory, governance, and execution evidence. This initial skeleton demonstrates the product structure with static data; it does not execute agents or claim production compliance.
 
-## Features
+## Skeleton features
 
-- Supabase email/password authentication
-- Protected dashboard and automatic default workspace
-- Agent registry with lifecycle and risk status
-- Tool registry with approval and risk status
-- Knowledge-source registry
-- Manual agent-run logger with output, status, latency, and estimated cost
-- Step-level execution traces
-- Dashboard metrics and audit timeline
-- Project isolation through Supabase RLS
-- Realistic demo seed data
+- Product landing and static login/signup experience
+- Shared responsive SaaS dashboard shell and navigation
+- Eight operational metric cards
+- Agent, tool, knowledge-source, and run registries backed by typed demo data
+- Chronological audit timeline with status, risk, cost, and latency
+- Supabase Cloud browser-client foundation
+- Complete seven-table Postgres schema with constraints, triggers, and RLS
 
 ## Tech stack
 
-- Next.js App Router
+- Next.js App Router and React
 - TypeScript
 - Tailwind CSS
-- Supabase Cloud: Auth, Postgres, RLS, functions, and triggers
-- Vercel
+- Supabase Cloud (planned Auth, Postgres, and RLS backend)
+- Vercel-ready Next.js deployment
+
+No custom API server, ORM, local Supabase stack, AI runtime, or vector database is included.
 
 ## Architecture summary
 
-Next.js provides the user interface and authenticated application layer. Supabase Auth manages identities. All operational data lives in Supabase Postgres and belongs to a project. RLS checks project ownership for every database operation. AIMS does not include a custom backend server or a real AI runtime.
+Next.js is the application and presentation layer. Supabase Cloud is the only planned backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
 
-## Demo flow
+The current UI reads only `lib/demo-data.ts`. Supabase connectivity, authentication, protected routes, CRUD, and live metrics are intentionally deferred to later phases.
 
-1. Sign in and review fleet metrics.
-2. Inspect active and high-risk agents.
-3. Compare approved and unapproved tools.
-4. Review registered knowledge sources.
-5. log a success, failure, or review-required run.
-6. Inspect its step-level trace.
-7. Confirm updated dashboard metrics and audit history.
+## Routes
 
-## Setup
+| Route | Purpose | Current state |
+|---|---|---|
+| `/` | Product landing page | Static |
+| `/login` | Login/signup preview | Static; auth not connected |
+| `/dashboard` | Fleet health and recent runs | Static demo data |
+| `/agents` | Agent registry | Static demo data |
+| `/tools` | Governed tool registry | Static demo data |
+| `/knowledge` | Knowledge-source inventory | Static demo data |
+| `/runs` | Execution log | Static demo data |
+| `/audit` | Chronological audit history | Static demo data |
 
-1. Clone the repository and install dependencies:
+## Supabase Cloud setup
 
-   ```bash
-   npm install
-   ```
+1. Create a hosted Supabase project at Supabase Cloud. Do not initialize local Supabase.
+2. Open its SQL Editor and run `supabase/schema.sql` once. The SQL creates profiles, projects, agents, tools, knowledge sources, agent runs, and run steps; enables RLS; and installs project-isolation policies.
+3. Copy `.env.example` to `.env.local` and fill in the public project values.
+4. Do not place the service-role key in this application.
 
-2. Create a Supabase Cloud project.
-3. Run the SQL in `docs/03_DATABASE_SCHEMA.md` using the Supabase SQL Editor.
-4. Create `.env.local` from `.env.example` and add the public Supabase values.
-5. Start the application:
-
-   ```bash
-   npm run dev
-   ```
-
-6. Sign up, confirm the default workspace, and load demo data from the application.
-7. Add the same environment variables to Vercel and deploy.
-
-Do not use the Supabase service-role key in this application.
+The schema is available both as executable SQL in `supabase/schema.sql` and as an explained reference in `docs/03_DATABASE_SCHEMA.md`.
 
 ## Environment variables
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-## Screenshots
+## Development
 
-- `[Dashboard screenshot]`
-- `[Agent registry screenshot]`
-- `[Run details screenshot]`
-- `[Audit timeline screenshot]`
+```bash
+npm install
+npm run dev
+npm run lint
+npm run build
+```
 
-## Resume relevance
+Then open `http://localhost:3000`. Production deployment can use Vercel with the same two public environment variables.
 
-AIMS demonstrates Applied AI operations, agent governance, execution observability, full-stack product engineering, relational backend design, Supabase Auth, database-level tenant isolation, dashboarding, and cloud deployment.
+## Current status
 
-See `docs/05_RESUME_NOTES.md` for verified resume bullets and interview preparation.
+This repository contains the initial runnable skeleton only. All visible records and metrics are deterministic demo data. Buttons are intentionally non-functional, authentication is not implemented, pages do not query Supabase, and no real AI APIs are called.
+
+## Next implementation phases
+
+1. Connect Supabase Auth and protect application routes.
+2. Resolve the authenticated user's default project.
+3. Implement project-scoped CRUD for agents, tools, and knowledge sources.
+4. Add manual run and run-step logging.
+5. Replace demo metrics and audit events with project-scoped queries.
+6. Verify RLS isolation with separate test users, then deploy to Vercel.
+
+See the command center documents in `docs/` for the product boundary, architecture, schema rationale, phased plan, and verified resume narrative.
