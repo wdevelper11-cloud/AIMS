@@ -51,6 +51,18 @@ export interface KnowledgeSource {
   status: "active" | "inactive" | "sync_error";
 }
 
+export type KnowledgeSourceStatus = "active" | "inactive";
+
+export interface DatabaseKnowledgeSource {
+  id: string;
+  project_id: string;
+  title: string;
+  source_type: string | null;
+  url: string | null;
+  status: KnowledgeSourceStatus;
+  created_at: string;
+}
+
 export interface AgentRun {
   id: string;
   agentId: string;

@@ -49,6 +49,7 @@ Use the strongest three bullets that match the role and only claim features that
 - Privilege-limited demo seed function
 - Project-scoped agent reads, inserts, status updates, and deletes through the user's RLS-limited session
 - Project-scoped tool reads, inserts, approval/risk updates, and deletes through the user's RLS-limited session
+- Project-scoped knowledge-source governance CRUD through Supabase Cloud with explicit query scoping and RLS ownership enforcement
 
 ## Demo explanation
 

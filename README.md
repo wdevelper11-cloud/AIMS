@@ -17,7 +17,8 @@ AIMS provides a project-scoped operational workspace for agent inventory, govern
 - Eight operational metric cards
 - Live agent registry with create, status update, and delete operations
 - Live governed tool registry with create, approval, risk, and delete operations
-- Knowledge-source and run registries backed by typed demo data
+- Live knowledge-source governance registry with create, status update, and delete operations
+- Run registry backed by typed demo data
 - Chronological audit timeline with status, risk, cost, and latency
 - Supabase Cloud cookie-backed browser/server auth clients
 - Protected application routes, persistent sessions, and logout
@@ -38,7 +39,7 @@ No custom API server, ORM, local Supabase stack, AI runtime, or vector database 
 
 Next.js is the application and presentation layer. Supabase Cloud is the only planned backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
 
-Authentication, the agent registry, and the tool registry are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. Other operational pages and dashboard metrics still use `lib/demo-data.ts` and remain deferred to later phases.
+Authentication and the agent, tool, and knowledge-source registries are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. Other operational pages and dashboard metrics still use `lib/demo-data.ts` and remain deferred to later phases.
 
 ## Routes
 
@@ -49,7 +50,7 @@ Authentication, the agent registry, and the tool registry are connected to Supab
 | `/dashboard` | Fleet health and recent runs | Protected; static demo data |
 | `/agents` | Agent registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/tools` | Governed tool registry | Protected; live Supabase CRUD scoped to the default workspace |
-| `/knowledge` | Knowledge-source inventory | Protected; static demo data |
+| `/knowledge` | Knowledge-source governance registry | Protected; live Supabase CRUD scoped to the default workspace |
 | `/runs` | Execution log | Protected; static demo data |
 | `/audit` | Chronological audit history | Protected; static demo data |
 
@@ -143,15 +144,30 @@ Manual validation against Supabase Cloud:
 6. Sign out and confirm `/tools` redirects to `/login`.
 7. Optionally sign in as test user B and confirm user A's tools are not visible or writable.
 
+## Knowledge Source Registry CRUD (Phase 8)
+
+`/knowledge` represents AI-agent knowledge governance: it records approved source-system metadata without ingesting source contents. It loads only knowledge sources belonging to the authenticated user’s resolved default workspace. Create, status-update, and delete operations derive the workspace `project_id` internally, explicitly scope target rows, and remain independently protected by Supabase RLS.
+
+The MVP does **not** implement RAG, embeddings, vector search, file upload, document/PDF parsing, scraping, ingestion, or retrieval.
+
+Manual validation against Supabase Cloud:
+
+1. Sign in as test user A and open `/knowledge`; confirm **No knowledge sources registered yet.** appears when the workspace is empty.
+2. Add **Support Playbook**, select **Internal Docs**, enter `https://example.com/support-playbook`, and leave status active.
+3. Confirm it appears, then inspect **Table Editor → knowledge_sources** and verify its title, source type, URL, status, and resolved workspace `project_id`.
+4. Change status to inactive and back to active; verify both changes in the UI and Cloud row.
+5. Delete the source after accepting confirmation and verify it disappears from the UI and Table Editor.
+6. Sign out and confirm `/knowledge` redirects to `/login`.
+7. Optionally sign in as test user B and confirm user A’s sources are neither visible nor writable.
+
 ## Current status
 
-This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD. Knowledge sources, runs, audit history, and dashboard metrics remain deterministic demo data. No real AI APIs are called.
+This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD, and Phase 8 project-scoped knowledge-source governance CRUD. Runs, audit history, and dashboard metrics remain deterministic demo data. No real AI APIs are called.
 
 ## Next implementation phases
 
-1. Implement project-scoped CRUD for knowledge sources.
-2. Add manual run and run-step logging.
-3. Replace demo metrics and audit events with project-scoped queries.
-4. Verify RLS isolation with separate test users, then deploy to Vercel.
+1. Add manual run and run-step logging.
+2. Replace demo metrics and audit events with project-scoped queries.
+3. Verify RLS isolation with separate test users, then deploy to Vercel.
 
 See the command center documents in `docs/` for the product boundary, architecture, schema rationale, phased plan, and verified resume narrative.

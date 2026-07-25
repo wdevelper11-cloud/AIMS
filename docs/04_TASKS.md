@@ -214,7 +214,7 @@
 
 **Commit:** `feat: add governed tool registry`
 
-## Phase 8 — Knowledge source registry
+## Phase 8 — Knowledge source registry ✅ Implemented
 
 **Goal:** Record which sources agents may reference without implementing RAG.
 
@@ -222,15 +222,20 @@
 
 **Acceptance criteria:**
 
-- Users can list, create, edit, and delete sources.
-- Title, source type, URL, and status are visible.
-- The UI makes clear that sources are registered, not ingested.
+- [x] Users can list, create, update status, and delete project-scoped sources.
+- [x] Title, source type, URL, and status are visible.
+- [x] Initial reads and every mutation use the resolved default project ID in addition to RLS.
+- [x] Query failures show an explicit error without demo-data fallback.
+- [x] The UI makes clear that sources are registered, not ingested.
 
 **Manual test checklist:**
 
-- Create one source of each supported type.
-- Verify URL and status validation.
-- Confirm no embedding or retrieval dependency exists.
+- [ ] Confirm the professional empty state for a workspace without sources.
+- [ ] Create Support Playbook as Internal Docs and verify its resolved `project_id` in Supabase Cloud.
+- [ ] Change status from active to inactive and back, checking the Cloud row after each update.
+- [ ] Delete the source after confirmation and verify Cloud deletion.
+- [ ] Sign out and confirm `/knowledge` redirects to `/login`; optionally verify isolation with a second user.
+- [x] Confirm no embedding, ingestion, file-upload, or retrieval dependency exists.
 
 **Commit:** `feat: add knowledge source registry`
 
