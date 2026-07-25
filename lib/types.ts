@@ -33,6 +33,16 @@ export interface Tool {
   riskLevel: RiskLevel;
 }
 
+export interface DatabaseTool {
+  id: string;
+  project_id: string;
+  name: string;
+  category: string | null;
+  is_approved: boolean;
+  risk_level: RiskLevel;
+  created_at: string;
+}
+
 export interface KnowledgeSource {
   id: string;
   title: string;
