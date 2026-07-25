@@ -96,15 +96,21 @@
 
 ## Phase 4 — Supabase Auth
 
+**Status:** Implemented and validated in the Phase 4 codebase.
+
 **Goal:** Implement email/password signup, login, logout, and protected routes.
 
 **Files likely touched:** `app/(auth)/login/page.tsx`, `app/(auth)/signup/page.tsx`, `app/auth/callback/route.ts`, `middleware.ts`, `lib/supabase/middleware.ts`, `components/sign-out-button.tsx`
 
 **Acceptance criteria:**
 
-- Signup, login, logout, session refresh, and redirects work.
-- Unauthenticated users cannot open dashboard routes.
-- Auth errors and loading states are visible.
+- [x] Signup, login, logout, session refresh, and redirects are implemented.
+- [x] Unauthenticated users cannot open dashboard routes.
+- [x] Auth errors, success feedback, and loading states are visible.
+- [x] The authenticated user's email is displayed in the application shell.
+- [x] Only the Supabase project URL and public anon/publishable key are used.
+- [x] Middleware and a server-side protected layout both enforce authentication.
+- [x] Missing authentication configuration fails closed for protected pages.
 
 **Manual test checklist:**
 

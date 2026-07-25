@@ -15,6 +15,6 @@ export function Sidebar() {
     <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:block md:space-y-1 md:pb-0" aria-label="Main navigation">
       {links.map(([label, href]) => <Link key={href} href={href} className={`block whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition ${pathname === href ? "bg-indigo-600 text-white" : "text-slate-300 hover:bg-slate-900 hover:text-white"}`}>{label}</Link>)}
     </nav>
-    <div className="hidden px-6 text-xs leading-5 text-slate-500 md:absolute md:bottom-6 md:block">Static skeleton<br />Supabase Auth ready</div>
+    <div className="hidden px-6 text-xs leading-5 text-slate-500 md:absolute md:bottom-6 md:block">Protected workspace<br />Supabase Auth</div>
   </aside>;
 }
