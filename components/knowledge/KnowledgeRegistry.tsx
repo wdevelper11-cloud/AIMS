@@ -56,7 +56,7 @@ export function KnowledgeRegistry({ initialSources, projectId }: { initialSource
         tone: "error",
         message: constraintOutdated
           ? "Your Supabase Cloud schema has an outdated knowledge source type constraint. Run supabase/patches/phase8_knowledge_source_type_patch.sql in the Supabase SQL Editor."
-          : `Knowledge source could not be added: ${error.message}`,
+          : "Knowledge source could not be added. Check the values and try again.",
       });
       return;
     }
@@ -68,7 +68,7 @@ export function KnowledgeRegistry({ initialSources, projectId }: { initialSource
   async function updateStatus(source: DatabaseKnowledgeSource, status: KnowledgeSourceStatus) {
     setFeedback(null);
     const { error } = await createBrowserClient().from("knowledge_sources").update({ status }).eq("id", source.id).eq("project_id", projectId);
-    if (error) setFeedback({ tone: "error", message: `Status could not be updated: ${error.message}` });
+    if (error) setFeedback({ tone: "error", message: "Status could not be updated. Please try again." });
     else refresh("Knowledge source status updated.");
   }
 
@@ -76,7 +76,7 @@ export function KnowledgeRegistry({ initialSources, projectId }: { initialSource
     if (!window.confirm(`Delete ${source.title}? This action cannot be undone.`)) return;
     setFeedback(null);
     const { error } = await createBrowserClient().from("knowledge_sources").delete().eq("id", source.id).eq("project_id", projectId);
-    if (error) setFeedback({ tone: "error", message: `Knowledge source could not be deleted: ${error.message}` });
+    if (error) setFeedback({ tone: "error", message: "Knowledge source could not be deleted. Please try again." });
     else refresh("Knowledge source deleted.");
   }
 

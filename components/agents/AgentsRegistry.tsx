@@ -43,7 +43,7 @@ export function AgentsRegistry({ initialAgents, projectId }: { initialAgents: Da
     });
 
     if (error) {
-      setFeedback({ tone: "error", message: `Agent could not be created: ${error.message}` });
+      setFeedback({ tone: "error", message: "Agent could not be created. Check the values and try again." });
       return;
     }
     form.reset();
@@ -58,7 +58,7 @@ export function AgentsRegistry({ initialAgents, projectId }: { initialAgents: Da
       .update({ status })
       .eq("id", agentId)
       .eq("project_id", projectId);
-    if (error) setFeedback({ tone: "error", message: `Status could not be updated: ${error.message}` });
+    if (error) setFeedback({ tone: "error", message: "Status could not be updated. Please try again." });
     else refresh("Agent status updated.");
   }
 
@@ -70,7 +70,7 @@ export function AgentsRegistry({ initialAgents, projectId }: { initialAgents: Da
       .delete()
       .eq("id", agent.id)
       .eq("project_id", projectId);
-    if (error) setFeedback({ tone: "error", message: `Agent could not be deleted: ${error.message}` });
+    if (error) setFeedback({ tone: "error", message: "Agent could not be deleted. Please try again." });
     else refresh("Agent deleted.");
   }
 

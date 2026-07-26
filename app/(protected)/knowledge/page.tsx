@@ -20,7 +20,7 @@ export default async function KnowledgePage() {
     {error ? <section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm">
       <p className="text-sm font-semibold text-red-700">Unable to load knowledge sources</p>
       <p className="mt-2 text-sm text-slate-600">Supabase could not load this workspace&apos;s knowledge-source registry. Refresh the page or try again later.</p>
-      <p className="mt-2 text-xs text-slate-500">{error.message}</p>
+
     </section> : <KnowledgeRegistry initialSources={(data ?? []) as DatabaseKnowledgeSource[]} projectId={workspace.project.id} />}
   </>;
 }

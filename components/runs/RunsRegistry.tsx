@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { createBrowserClient } from "@/lib/supabase/client";
+import { formatUtcTimestamp } from "@/lib/format";
 import type { AgentOption, AgentRunStatus, DatabaseAgentRun, RiskLevel, ToolOption } from "@/lib/types";
 
 type Feedback = { tone: "success" | "error"; message: string } | null;
@@ -58,7 +59,7 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
         tone: "error",
         message: schemaMissingRisk
           ? "Your Supabase Cloud agent_runs schema is missing the Phase 9 risk_level default. Run supabase/patches/phase9_agent_runs_patch.sql in the Supabase SQL Editor."
-          : `Agent run could not be logged: ${runError?.message ?? "No run was returned."}`,
+          : "Agent run could not be logged. Check the values and try again.",
       });
       return;
     }
@@ -94,7 +95,7 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
     {showForm && <RunForm agents={agents} approvedTools={approvedTools} onSubmit={createRun} disabled={isPending} />}
     {feedback && <p role="status" className={`rounded-lg border px-4 py-3 text-sm ${feedback.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>{feedback.message}</p>}
     {initialRuns.length === 0 ? <EmptyState title="No agent runs logged yet." description="Log your first agent run." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Agent</th><th>Task</th><th>Status</th><th>Risk</th><th>Latency</th><th>Cost</th><th>Output preview</th><th>Created at</th></tr></thead><tbody>{initialRuns.map((run) => <tr key={run.id}>
-      <td className="font-semibold !text-slate-900">{run.agent_id ? agentNames.get(run.agent_id) ?? "Deleted agent" : "Deleted agent"}</td><td>{run.task}</td><td><Badge value={run.status} /></td><td><Badge value={run.risk_level} /></td><td>{run.latency_ms.toLocaleString()} ms</td><td>${Number(run.cost_usd).toFixed(4)}</td><td className="max-w-xs truncate" title={run.output ?? undefined}>{run.output || "—"}</td><td>{new Date(run.created_at).toLocaleString()}</td>
+      <td className="font-semibold !text-slate-900">{run.agent_id ? agentNames.get(run.agent_id) ?? "Deleted agent" : "Deleted agent"}</td><td>{run.task}</td><td><Badge value={run.status} /></td><td><Badge value={run.risk_level} /></td><td>{run.latency_ms.toLocaleString()} ms</td><td>${Number(run.cost_usd).toFixed(4)}</td><td className="max-w-xs truncate" title={run.output ?? undefined}>{run.output || "—"}</td><td>{formatUtcTimestamp(run.created_at)}</td>
     </tr>)}</tbody></table></div>}
   </div>;
 }

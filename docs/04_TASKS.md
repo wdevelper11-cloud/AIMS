@@ -1,4 +1,6 @@
-# AIMS One-Day Implementation Plan
+# AIMS Historical Implementation Plan
+
+> Historical planning record: the implementation is complete. For current setup and product behavior, use `README.md`.
 
 ## Execution rules
 
