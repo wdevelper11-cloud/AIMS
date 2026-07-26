@@ -15,13 +15,13 @@ export function LogoutButton() {
     try {
       const { error: signOutError } = await createBrowserClient().auth.signOut();
       if (signOutError) {
-        setError(signOutError.message);
+        setError("We could not sign you out. Check your connection and try again.");
         return;
       }
       router.replace("/login");
       router.refresh();
-    } catch (logoutError) {
-      setError(logoutError instanceof Error ? logoutError.message : "Sign out failed. Please try again.");
+    } catch {
+      setError("We could not sign you out. Check your connection and try again.");
     } finally {
       setLoading(false);
     }

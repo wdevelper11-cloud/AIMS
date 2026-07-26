@@ -19,7 +19,7 @@ export default async function KnowledgePage() {
     <PageHeader title="Knowledge source registry" description="Govern the reference systems available to agents. Sources are registered as metadata, not ingested or used for retrieval." />
     {error ? <section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm">
       <p className="text-sm font-semibold text-red-700">Unable to load knowledge sources</p>
-      <p className="mt-2 text-sm text-slate-600">Supabase could not load this workspace&apos;s knowledge-source registry. Refresh the page or try again later.</p>
+      <p className="mt-2 text-sm text-slate-600">The knowledge registry is temporarily unavailable. Refresh the page or try again shortly.</p>
 
     </section> : <KnowledgeRegistry initialSources={(data ?? []) as DatabaseKnowledgeSource[]} projectId={workspace.project.id} />}
   </>;

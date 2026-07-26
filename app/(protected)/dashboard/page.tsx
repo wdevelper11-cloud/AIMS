@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatGrid } from "@/components/ui/StatGrid";
 import { Badge } from "@/components/ui/Badge";
@@ -22,7 +23,7 @@ export default async function DashboardPage() {
   ]);
   const error = agentsResult.error ?? runsResult.error ?? toolsResult.error ?? knowledgeResult.error;
 
-  if (error) return <><PageHeader title="Operations overview" description="Monitor agent inventory, execution health, governance, latency, and estimated cost." /><section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm"><p className="text-sm font-semibold text-red-700">Unable to load dashboard metrics.</p><p className="mt-2 text-sm text-slate-600">Supabase could not load this workspace&apos;s operations data. Confirm that the current schema and patches have been applied, then refresh.</p></section></>;
+  if (error) return <><PageHeader title="Operations overview" description="Monitor agent inventory, execution health, governance, latency, and estimated cost." /><section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm"><p className="text-sm font-semibold text-red-700">Unable to load dashboard metrics.</p><p className="mt-2 text-sm text-slate-600">Workspace metrics are temporarily unavailable. Refresh the page or try again shortly.</p></section></>;
 
   const agents = agentsResult.data ?? [];
   const runs = runsResult.data ?? [];
@@ -51,5 +52,12 @@ export default async function DashboardPage() {
   const agentNames = new Map(agents.map((agent) => [agent.id, agent.name]));
   const recentRuns: DashboardRecentRun[] = runs.slice(0, 5).map((run) => ({ id: run.id, agentName: run.agent_id ? agentNames.get(run.agent_id) ?? "Deleted agent" : "Deleted agent", task: run.task, status: run.status as AgentRunStatus, riskLevel: run.risk_level as RiskLevel, latencyMs: Number(run.latency_ms ?? 0), costUsd: Number(run.cost_usd ?? 0), createdAt: run.created_at }));
 
-  return <><PageHeader title="Operations overview" description="Monitor live, project-scoped agent inventory, execution health, governance, latency, and estimated cost." /><StatGrid metrics={cards} /><section className="mt-8"><h2 className="mb-4 text-lg font-bold">Recent runs</h2>{recentRuns.length === 0 ? <EmptyState title="No recent runs yet." description="Log an agent run to populate workspace observability." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Agent</th><th>Task</th><th>Status</th><th>Risk</th><th>Latency</th><th>Cost</th><th>Created at</th></tr></thead><tbody>{recentRuns.map((run) => <tr key={run.id}><td className="font-semibold !text-slate-900">{run.agentName}</td><td>{run.task}</td><td><Badge value={run.status} /></td><td><Badge value={run.riskLevel} /></td><td>{run.latencyMs.toLocaleString()} ms</td><td>${run.costUsd.toFixed(4)}</td><td>{formatUtcTimestamp(run.createdAt)}</td></tr>)}</tbody></table></div>}</section></>;
+  const nextSteps = [
+    { href: "/agents", label: "Register agents", detail: "Define role, model, lifecycle, and risk." },
+    { href: "/tools", label: "Govern tools", detail: "Review capability approval and risk." },
+    { href: "/knowledge", label: "Add knowledge", detail: "Catalog approved reference systems." },
+    { href: "/runs", label: "Review runs", detail: "Log and inspect execution evidence." },
+  ];
+
+  return <><PageHeader title="Operations overview" description="A current view of agent inventory, governed access, execution health, latency, and estimated cost for this workspace." /><section aria-labelledby="next-steps-title" className="mb-7 rounded-xl border border-indigo-100 bg-indigo-50/70 p-5"><h2 id="next-steps-title" className="font-semibold text-slate-950">Continue the operations workflow</h2><p className="mt-1 text-sm text-slate-600">Build the registry first, then record runs and use the audit timeline to review activity.</p><div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{nextSteps.map((step, index) => <Link key={step.href} href={step.href} className="group rounded-lg border border-indigo-100 bg-white p-4 shadow-sm transition hover:border-indigo-300"><span className="text-xs font-bold text-indigo-600">0{index + 1}</span><p className="mt-1 text-sm font-semibold text-slate-900 group-hover:text-indigo-700">{step.label} →</p><p className="mt-1 text-xs leading-5 text-slate-500">{step.detail}</p></Link>)}</div></section><StatGrid metrics={cards} /><section className="mt-8"><div className="mb-4 flex items-end justify-between"><div><h2 className="text-lg font-bold">Recent runs</h2><p className="mt-1 text-sm text-slate-500">The five latest execution records in this workspace.</p></div>{recentRuns.length > 0 && <Link href="/runs" className="text-sm font-semibold text-indigo-600 hover:text-indigo-500">View all runs →</Link>}</div>{recentRuns.length === 0 ? <EmptyState title="No execution evidence yet" description="Register an agent, then log its first run to begin tracking outcomes, latency, estimated cost, and risk." action={{ label: "Go to run logger", href: "/runs" }} /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Agent</th><th>Task</th><th>Status</th><th>Risk</th><th>Latency</th><th>Cost</th><th>Recorded</th></tr></thead><tbody>{recentRuns.map((run) => <tr key={run.id}><td className="font-semibold !text-slate-900">{run.agentName}</td><td>{run.task}</td><td><Badge value={run.status} /></td><td><Badge value={run.riskLevel} /></td><td>{run.latencyMs.toLocaleString()} ms</td><td>${run.costUsd.toFixed(4)}</td><td>{formatUtcTimestamp(run.createdAt)}</td></tr>)}</tbody></table></div>}</section></>;
 }

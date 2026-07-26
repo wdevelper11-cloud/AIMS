@@ -118,6 +118,20 @@ Then open `http://localhost:3000`. Production deployment can use Vercel with the
 5. While signed in, open `/login` and confirm it redirects to `/dashboard`.
 6. Select **Sign out**, then open `/dashboard` or another application route and confirm it redirects to `/login`.
 
+## Recruiter demo walkthrough
+
+For a concise product demo, begin on the landing page and frame AIMS as an operations control plane—not an agent runtime. Sign in, then follow the protected navigation from left to right:
+
+1. **Dashboard:** orient the viewer with the workflow shortcuts and workspace metrics.
+2. **Agents:** register a **Support Triage Agent** with an active lifecycle and medium risk.
+3. **Tools:** add **Web Search** as approved and **Customer Database** as unapproved/high risk to demonstrate governance decisions.
+4. **Knowledge:** register a **Support Playbook** as active Internal Docs metadata.
+5. **Run monitoring:** record a `needs_review` execution with latency, estimated cost, output, and an optional approved tool step.
+6. **Dashboard:** return to show that the operational metrics and recent-run evidence now reflect the recorded data.
+7. **Audit timeline:** close on the chronological activity view and explain that every underlying record is project-scoped through Supabase RLS.
+
+An interviewer should notice the clear boundary between registry/governance metadata and execution, the explicit human-review and risk states, and the way one project-scoped data model supports inventory, monitoring, and audit views without placeholder data or simulated AI calls.
+
 Middleware protects `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/runs`, and `/audit`. It also refreshes valid Supabase sessions. Authentication uses only the project URL and public anon/publishable key; authorization of database queries is enforced by RLS.
 
 ## Default workspace resolution

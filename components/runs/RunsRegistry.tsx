@@ -54,13 +54,7 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
     }).select("id").single<{ id: string }>();
 
     if (runError || !run) {
-      const schemaMissingRisk = runError && /risk_level|agent_runs_risk_level_check/i.test(runError.message);
-      setFeedback({
-        tone: "error",
-        message: schemaMissingRisk
-          ? "Your Supabase Cloud agent_runs schema is missing the Phase 9 risk_level default. Run supabase/patches/phase9_agent_runs_patch.sql in the Supabase SQL Editor."
-          : "Agent run could not be logged. Check the values and try again.",
-      });
+      setFeedback({ tone: "error", message: "Agent run could not be logged. Check the values and try again." });
       return;
     }
 
@@ -80,7 +74,7 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
         status: values.get("step_status") as AgentRunStatus,
       });
       if (stepError) {
-        refresh("Run logged, but optional tool step failed. Your Supabase Cloud agent_run_steps table may have old required columns. Run supabase/patches/phase9_agent_runs_patch.sql again.", "error");
+        refresh("Run logged, but the optional tool step could not be saved. Check the selected tool and try again.", "error");
         return;
       }
     }
@@ -94,7 +88,7 @@ export function RunsRegistry({ initialRuns, agents, approvedTools, projectId }: 
     {agents.length === 0 ? <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Create an agent before logging runs.</p> : <div className="flex justify-end"><button type="button" onClick={() => setShowForm((open) => !open)} className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">{showForm ? "Cancel" : "Log Agent Run"}</button></div>}
     {showForm && <RunForm agents={agents} approvedTools={approvedTools} onSubmit={createRun} disabled={isPending} />}
     {feedback && <p role="status" className={`rounded-lg border px-4 py-3 text-sm ${feedback.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>{feedback.message}</p>}
-    {initialRuns.length === 0 ? <EmptyState title="No agent runs logged yet." description="Log your first agent run." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Agent</th><th>Task</th><th>Status</th><th>Risk</th><th>Latency</th><th>Cost</th><th>Output preview</th><th>Created at</th></tr></thead><tbody>{initialRuns.map((run) => <tr key={run.id}>
+    {initialRuns.length === 0 ? <EmptyState title="No agent runs logged yet" description="After registering an agent, log an execution outcome to begin monitoring reliability, latency, cost, and risk." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Agent</th><th>Task</th><th>Status</th><th>Risk</th><th>Latency</th><th>Cost</th><th>Output preview</th><th>Created at</th></tr></thead><tbody>{initialRuns.map((run) => <tr key={run.id}>
       <td className="font-semibold !text-slate-900">{run.agent_id ? agentNames.get(run.agent_id) ?? "Deleted agent" : "Deleted agent"}</td><td>{run.task}</td><td><Badge value={run.status} /></td><td><Badge value={run.risk_level} /></td><td>{run.latency_ms.toLocaleString()} ms</td><td>${Number(run.cost_usd).toFixed(4)}</td><td className="max-w-xs truncate" title={run.output ?? undefined}>{run.output || "—"}</td><td>{formatUtcTimestamp(run.created_at)}</td>
     </tr>)}</tbody></table></div>}
   </div>;

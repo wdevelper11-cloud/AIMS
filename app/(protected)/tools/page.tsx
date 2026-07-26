@@ -15,8 +15,6 @@ export default async function ToolsPage() {
     .eq("project_id", workspace.project.id)
     .order("created_at", { ascending: false });
 
-  const schemaColumnMissing = error && /column tools\.(is_approved|category|risk_level|created_at) does not exist/i.test(error.message);
-
   return (
     <>
       <PageHeader
@@ -27,9 +25,7 @@ export default async function ToolsPage() {
         <section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm">
           <p className="text-sm font-semibold text-red-700">Unable to load tools</p>
           <p className="mt-2 text-sm text-slate-600">
-            {schemaColumnMissing
-              ? <>Your Supabase Cloud schema is missing Tool Registry columns. Run <code className="font-mono text-xs">supabase/patches/phase7_tools_registry_patch.sql</code> in the Supabase SQL Editor.</>
-              : <>Supabase could not load this workspace&apos;s tool registry. Refresh the page or try again later.</>}
+            The tool registry is temporarily unavailable. Refresh the page or try again shortly.
           </p>
 
         </section>
