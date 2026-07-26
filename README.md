@@ -8,7 +8,7 @@ As AI agents move into support, sales, finance, research, and engineering workfl
 
 ## Solution
 
-AIMS provides a project-scoped operational workspace for agent inventory, governance, and execution evidence. This initial skeleton demonstrates the product structure with static data; it does not execute agents or claim production compliance.
+AIMS provides a project-scoped operational workspace for agent inventory, governance, and execution evidence. It records project-scoped operational data through Supabase; it does not execute agents or claim production compliance.
 
 ## Current features
 
@@ -37,7 +37,7 @@ No custom API server, ORM, local Supabase stack, AI runtime, or vector database 
 
 ## Architecture summary
 
-Next.js is the application and presentation layer. Supabase Cloud is the only planned backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
+Next.js is the application and presentation layer. Supabase Cloud is the only backend: Auth identifies users, Postgres stores project-owned operational records, and Row Level Security enforces ownership. The public URL and anon/publishable key are the only Supabase credentials intended for the browser; never expose a service-role key.
 
 Authentication and the agent, tool, knowledge-source, and run registries are connected to Supabase Cloud. Their pages perform project-scoped reads and mutations through the authenticated session, with RLS as the authorization boundary. The dashboard and audit timeline also read these same project-owned tables through the authenticated RLS session.
 
@@ -118,7 +118,7 @@ Then open `http://localhost:3000`. Production deployment can use Vercel with the
 5. While signed in, open `/login` and confirm it redirects to `/dashboard`.
 6. Select **Sign out**, then open `/dashboard` or another application route and confirm it redirects to `/login`.
 
-Middleware protects `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/runs`, and `/audit`. It also refreshes valid Supabase sessions. Authentication uses only the project URL and public anon/publishable key; authorization of future database queries remains enforced by RLS.
+Middleware protects `/dashboard`, `/agents`, `/tools`, `/knowledge`, `/runs`, and `/audit`. It also refreshes valid Supabase sessions. Authentication uses only the project URL and public anon/publishable key; authorization of database queries is enforced by RLS.
 
 ## Default workspace resolution
 
@@ -220,12 +220,11 @@ Manual validation against Supabase Cloud:
 
 ## Current status
 
-This repository contains the runnable UI skeleton, the Supabase Cloud schema/RLS boundary, Phase 4 authentication, Phase 5 profile/default-workspace resolution, Phase 6 live agent CRUD, and Phase 7 project-scoped tool-governance CRUD, and Phase 8 project-scoped knowledge-source governance CRUD, and Phase 9 manual agent-run persistence, and Phase 10 live project-scoped dashboard metrics, and Phase 11 live derived operational audit timeline. No real AI APIs are called.
+The repository contains the complete runnable application, Supabase Cloud schema and RLS boundary, authentication, default-workspace resolution, project-scoped registries, manual run persistence, dashboard metrics, and derived operational audit timeline. No real AI APIs are called.
 
-## Next implementation phases
+## Pre-deployment verification
 
 1. Verify RLS isolation with separate test users.
-2. Add optional secure demo-data tooling if still useful.
-3. Deploy the verified application to Vercel.
+2. Deploy the verified application to Vercel.
 
 See the command center documents in `docs/` for the product boundary, architecture, schema rationale, phased plan, and verified resume narrative.

@@ -34,7 +34,6 @@ Supabase Cloud owns:
 - Default workspace creation through protected server-side resolution
 - Project-owned tables for agents, tools, knowledge sources, runs, and run steps
 - RLS policies that isolate each owner's projects
-- A guarded database function that inserts demo data for the current user's project
 
 ## Authentication flow
 
@@ -70,7 +69,6 @@ Every business record resolves to a project. A run also references an agent from
 - The browser receives only the Supabase URL and anon/publishable key.
 - The service-role key is never used by the MVP application and never exposed to the browser.
 - SQL constraints restrict statuses, risk levels, non-negative latency, and non-negative cost.
-- Demo seeding verifies ownership before inserting records.
 
 RLS is the authorization boundary; filtering by `project_id` in React is not considered security.
 
@@ -80,13 +78,11 @@ RLS is the authorization boundary; filtering by `project_id` in React is not con
 |---|---|---|
 | `/` | Product landing page | Public |
 | `/login` | Email/password login | Public |
-| `/signup` | Account creation | Public |
 | `/dashboard` | Operational metrics and recent runs | Protected |
 | `/agents` | Agent registry and create/edit form | Protected |
 | `/tools` | Tool governance registry | Protected |
 | `/knowledge` | Knowledge-source registry | Protected |
 | `/runs` | Run list and manual run logger | Protected |
-| `/runs/[id]` | Run details and execution steps | Protected |
 | `/audit` | Chronological execution timeline | Protected |
 
 ## Suggested component structure

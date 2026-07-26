@@ -44,7 +44,6 @@ The one-day MVP includes:
 7. Optional execution steps attached to a run
 8. Dashboard metrics calculated from project-owned data
 9. Chronological audit timeline
-10. Demo data covering healthy, failed, review-required, and high-risk cases
 
 ## Out of scope
 
@@ -67,7 +66,6 @@ The one-day MVP includes:
 - As an engineer, I can inspect steps within a run to understand where it failed.
 - As a manager, I can view operational metrics across the workspace.
 - As an auditor, I can scan a chronological timeline of agent activity.
-- As a demo user, I can load realistic sample data instead of viewing an empty product.
 - As a workspace owner, I cannot read or modify another user's project data.
 
 ## Success criteria
@@ -81,7 +79,7 @@ The MVP is resume-ready when:
 - The audit timeline displays newest runs first with agent, task, status, time, latency, cost, and risk.
 - RLS prevents cross-project reads and writes even if a client request is manually modified.
 - The app is deployed to Vercel and uses only Supabase Cloud for backend capabilities.
-- The repository contains setup instructions, screenshots, and a clear engineering narrative.
+- The repository contains setup instructions and a clear engineering narrative.
 
 ## Demo flow
 

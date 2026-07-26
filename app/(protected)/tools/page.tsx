@@ -31,7 +31,7 @@ export default async function ToolsPage() {
               ? <>Your Supabase Cloud schema is missing Tool Registry columns. Run <code className="font-mono text-xs">supabase/patches/phase7_tools_registry_patch.sql</code> in the Supabase SQL Editor.</>
               : <>Supabase could not load this workspace&apos;s tool registry. Refresh the page or try again later.</>}
           </p>
-          <p className="mt-2 text-xs text-slate-500">{error.message}</p>
+
         </section>
       ) : (
         <ToolsRegistry initialTools={(data ?? []) as DatabaseTool[]} projectId={workspace.project.id} />

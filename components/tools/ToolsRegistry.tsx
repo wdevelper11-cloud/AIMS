@@ -40,7 +40,7 @@ export function ToolsRegistry({ initialTools, projectId }: { initialTools: Datab
     });
 
     if (error) {
-      setFeedback({ tone: "error", message: `Tool could not be registered: ${error.message}` });
+      setFeedback({ tone: "error", message: "Tool could not be registered. Check the values and try again." });
       return;
     }
     form.reset();
@@ -51,14 +51,14 @@ export function ToolsRegistry({ initialTools, projectId }: { initialTools: Datab
   async function updateApproval(tool: DatabaseTool, isApproved: boolean) {
     setFeedback(null);
     const { error } = await createBrowserClient().from("tools").update({ is_approved: isApproved }).eq("id", tool.id).eq("project_id", projectId);
-    if (error) setFeedback({ tone: "error", message: `Approval could not be updated: ${error.message}` });
+    if (error) setFeedback({ tone: "error", message: "Approval could not be updated. Please try again." });
     else refresh("Tool approval updated.");
   }
 
   async function updateRisk(tool: DatabaseTool, riskLevel: RiskLevel) {
     setFeedback(null);
     const { error } = await createBrowserClient().from("tools").update({ risk_level: riskLevel }).eq("id", tool.id).eq("project_id", projectId);
-    if (error) setFeedback({ tone: "error", message: `Risk level could not be updated: ${error.message}` });
+    if (error) setFeedback({ tone: "error", message: "Risk level could not be updated. Please try again." });
     else refresh("Tool risk level updated.");
   }
 
@@ -66,7 +66,7 @@ export function ToolsRegistry({ initialTools, projectId }: { initialTools: Datab
     if (!window.confirm(`Delete ${tool.name}? This action cannot be undone.`)) return;
     setFeedback(null);
     const { error } = await createBrowserClient().from("tools").delete().eq("id", tool.id).eq("project_id", projectId);
-    if (error) setFeedback({ tone: "error", message: `Tool could not be deleted: ${error.message}` });
+    if (error) setFeedback({ tone: "error", message: "Tool could not be deleted. Please try again." });
     else refresh("Tool deleted.");
   }
 

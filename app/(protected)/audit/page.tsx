@@ -20,7 +20,7 @@ export default async function AuditPage() {
   ]);
   const error = agentsResult.error ?? toolsResult.error ?? sourcesResult.error ?? runsResult.error ?? stepsResult.error;
 
-  return <><PageHeader title="Audit timeline" description="Review recent workspace activity across agents, tools, knowledge sources, runs, and tool steps." />{error ? <section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm"><p className="text-sm font-semibold text-red-700">Unable to load audit timeline.</p><p className="mt-2 text-sm text-slate-600">Supabase could not load the complete workspace timeline. Apply <code className="font-mono text-xs">supabase/patches/phase11_audit_timeline_patch.sql</code>, then refresh.</p><p className="mt-2 text-xs text-slate-500">{error.message}</p></section> : <AuditTimeline events={buildEvents(agentsResult.data ?? [], toolsResult.data ?? [], sourcesResult.data ?? [], runsResult.data ?? [], stepsResult.data ?? [])} />}</>;
+  return <><PageHeader title="Audit timeline" description="Review recent workspace activity across agents, tools, knowledge sources, runs, and tool steps." />{error ? <section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm"><p className="text-sm font-semibold text-red-700">Unable to load audit timeline.</p><p className="mt-2 text-sm text-slate-600">Supabase could not load the complete workspace timeline. Apply <code className="font-mono text-xs">supabase/patches/phase11_audit_timeline_patch.sql</code>, then refresh.</p></section> : <AuditTimeline events={buildEvents(agentsResult.data ?? [], toolsResult.data ?? [], sourcesResult.data ?? [], runsResult.data ?? [], stepsResult.data ?? [])} />}</>;
 }
 
 type Row = Record<string, unknown>;

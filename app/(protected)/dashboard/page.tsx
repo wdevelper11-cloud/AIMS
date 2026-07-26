@@ -4,6 +4,7 @@ import { StatGrid } from "@/components/ui/StatGrid";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { createServerClient } from "@/lib/supabase/server";
+import { formatUtcTimestamp } from "@/lib/format";
 import type { DashboardMetric, DashboardMetrics, DashboardRecentRun, RiskLevel, AgentRunStatus } from "@/lib/types";
 import { resolveWorkspace } from "@/lib/workspace";
 
@@ -21,7 +22,7 @@ export default async function DashboardPage() {
   ]);
   const error = agentsResult.error ?? runsResult.error ?? toolsResult.error ?? knowledgeResult.error;
 
-  if (error) return <><PageHeader title="Operations overview" description="Monitor agent inventory, execution health, governance, latency, and estimated cost." /><section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm"><p className="text-sm font-semibold text-red-700">Unable to load dashboard metrics.</p><p className="mt-2 text-sm text-slate-600">Supabase could not load this workspace&apos;s operations data. Apply <code className="font-mono text-xs">supabase/patches/phase10_dashboard_metrics_patch.sql</code>, then refresh.</p><p className="mt-2 text-xs text-slate-500">{error.message}</p></section></>;
+  if (error) return <><PageHeader title="Operations overview" description="Monitor agent inventory, execution health, governance, latency, and estimated cost." /><section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm"><p className="text-sm font-semibold text-red-700">Unable to load dashboard metrics.</p><p className="mt-2 text-sm text-slate-600">Supabase could not load this workspace&apos;s operations data. Confirm that the current schema and patches have been applied, then refresh.</p></section></>;
 
   const agents = agentsResult.data ?? [];
   const runs = runsResult.data ?? [];
@@ -50,5 +51,5 @@ export default async function DashboardPage() {
   const agentNames = new Map(agents.map((agent) => [agent.id, agent.name]));
   const recentRuns: DashboardRecentRun[] = runs.slice(0, 5).map((run) => ({ id: run.id, agentName: run.agent_id ? agentNames.get(run.agent_id) ?? "Deleted agent" : "Deleted agent", task: run.task, status: run.status as AgentRunStatus, riskLevel: run.risk_level as RiskLevel, latencyMs: Number(run.latency_ms ?? 0), costUsd: Number(run.cost_usd ?? 0), createdAt: run.created_at }));
 
-  return <><PageHeader title="Operations overview" description="Monitor live, project-scoped agent inventory, execution health, governance, latency, and estimated cost." /><StatGrid metrics={cards} /><section className="mt-8"><h2 className="mb-4 text-lg font-bold">Recent runs</h2>{recentRuns.length === 0 ? <EmptyState title="No recent runs yet." description="Log an agent run to populate workspace observability." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Agent</th><th>Task</th><th>Status</th><th>Risk</th><th>Latency</th><th>Cost</th><th>Created at</th></tr></thead><tbody>{recentRuns.map((run) => <tr key={run.id}><td className="font-semibold !text-slate-900">{run.agentName}</td><td>{run.task}</td><td><Badge value={run.status} /></td><td><Badge value={run.riskLevel} /></td><td>{run.latencyMs.toLocaleString()} ms</td><td>${run.costUsd.toFixed(4)}</td><td>{new Date(run.createdAt).toLocaleString()}</td></tr>)}</tbody></table></div>}</section></>;
+  return <><PageHeader title="Operations overview" description="Monitor live, project-scoped agent inventory, execution health, governance, latency, and estimated cost." /><StatGrid metrics={cards} /><section className="mt-8"><h2 className="mb-4 text-lg font-bold">Recent runs</h2>{recentRuns.length === 0 ? <EmptyState title="No recent runs yet." description="Log an agent run to populate workspace observability." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Agent</th><th>Task</th><th>Status</th><th>Risk</th><th>Latency</th><th>Cost</th><th>Created at</th></tr></thead><tbody>{recentRuns.map((run) => <tr key={run.id}><td className="font-semibold !text-slate-900">{run.agentName}</td><td>{run.task}</td><td><Badge value={run.status} /></td><td><Badge value={run.riskLevel} /></td><td>{run.latencyMs.toLocaleString()} ms</td><td>${run.costUsd.toFixed(4)}</td><td>{formatUtcTimestamp(run.createdAt)}</td></tr>)}</tbody></table></div>}</section></>;
 }
