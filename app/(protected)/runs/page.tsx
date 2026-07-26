@@ -21,7 +21,7 @@ export default async function RunsPage() {
     <PageHeader title="Agent run logger" description="Manually record agent execution outcomes, latency, estimated cost, and optional tool evidence for observability." />
     {error ? <section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm">
       <p className="text-sm font-semibold text-red-700">Unable to load agent runs</p>
-      <p className="mt-2 text-sm text-slate-600">Supabase could not load this workspace&apos;s run logger. Apply <code className="font-mono text-xs">supabase/patches/phase9_agent_runs_patch.sql</code>, then refresh or try again later.</p>
+      <p className="mt-2 text-sm text-slate-600">Execution records are temporarily unavailable. Refresh the page or try again shortly.</p>
 
     </section> : <RunsRegistry initialRuns={(runsResult.data ?? []) as DatabaseAgentRun[]} agents={(agentsResult.data ?? []) as AgentOption[]} approvedTools={(toolsResult.data ?? []) as ToolOption[]} projectId={workspace.project.id} />}
   </>;

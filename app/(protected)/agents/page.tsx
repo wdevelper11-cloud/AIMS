@@ -24,7 +24,7 @@ export default async function AgentsPage() {
       {error ? (
         <section role="alert" className="rounded-xl border border-red-200 bg-white p-8 shadow-sm">
           <p className="text-sm font-semibold text-red-700">Unable to load agents</p>
-          <p className="mt-2 text-sm text-slate-600">Supabase could not load this workspace&apos;s agent registry. Refresh the page or try again later.</p>
+          <p className="mt-2 text-sm text-slate-600">The agent registry is temporarily unavailable. Refresh the page or try again shortly.</p>
 
         </section>
       ) : (

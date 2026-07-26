@@ -14,7 +14,7 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
   try {
     workspace = await resolveWorkspace();
   } catch {
-    return <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5"><section className="max-w-lg rounded-xl border border-red-200 bg-white p-8 shadow-sm"><p className="text-sm font-semibold text-red-700">Workspace unavailable</p><h1 className="mt-2 text-2xl font-bold text-slate-950">AIMS could not load your workspace</h1><p className="mt-3 text-sm leading-6 text-slate-600">Profile and project resolution failed. Confirm that the current schema and patches have been applied, then try again.</p><p className="mt-4 text-xs text-slate-500">After applying the Cloud patch, refresh this page. RLS remains enabled throughout the patch.</p></section></main>;
+    return <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5"><section className="max-w-lg rounded-xl border border-red-200 bg-white p-8 shadow-sm"><p className="text-sm font-semibold text-red-700">Workspace unavailable</p><h1 className="mt-2 text-2xl font-bold text-slate-950">AIMS could not load your workspace</h1><p className="mt-3 text-sm leading-6 text-slate-600">We could not open your operations workspace. Refresh the page or sign in again.</p><p className="mt-4 text-xs text-slate-500">If the issue continues, contact the workspace administrator.</p></section></main>;
   }
 
   if (!workspace) redirect("/login");

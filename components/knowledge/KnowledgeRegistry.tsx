@@ -51,13 +51,7 @@ export function KnowledgeRegistry({ initialSources, projectId }: { initialSource
       status: values.get("status") as KnowledgeSourceStatus,
     });
     if (error) {
-      const constraintOutdated = /knowledge_sources_source_type_check|source_type.*check constraint/i.test(error.message);
-      setFeedback({
-        tone: "error",
-        message: constraintOutdated
-          ? "Your Supabase Cloud schema has an outdated knowledge source type constraint. Run supabase/patches/phase8_knowledge_source_type_patch.sql in the Supabase SQL Editor."
-          : "Knowledge source could not be added. Check the values and try again.",
-      });
+      setFeedback({ tone: "error", message: "Knowledge source could not be added. Check the values and try again." });
       return;
     }
     form.reset();
@@ -84,7 +78,7 @@ export function KnowledgeRegistry({ initialSources, projectId }: { initialSource
     <div className="flex justify-end"><button type="button" onClick={() => setShowForm((open) => !open)} className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">{showForm ? "Cancel" : "Add Knowledge Source"}</button></div>
     {showForm && <KnowledgeSourceForm onSubmit={createSource} disabled={isPending} />}
     {feedback && <p role="status" className={`rounded-lg border px-4 py-3 text-sm ${feedback.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>{feedback.message}</p>}
-    {initialSources.length === 0 ? <EmptyState title="No knowledge sources registered yet." description="Add your first knowledge source." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Title</th><th>Source type</th><th>URL</th><th>Status</th><th>Actions</th></tr></thead><tbody>{initialSources.map((source) => <tr key={source.id}>
+    {initialSources.length === 0 ? <EmptyState title="No knowledge sources registered yet" description="Add source metadata to document which reference systems are available to your agent operations." /> : <div className="table-shell"><table className="data-table"><thead><tr><th>Title</th><th>Source type</th><th>URL</th><th>Status</th><th>Actions</th></tr></thead><tbody>{initialSources.map((source) => <tr key={source.id}>
       <td className="font-semibold !text-slate-900">{source.title}</td><td>{source.source_type ? SOURCE_TYPE_LABELS[source.source_type] : "Website"}</td>
       <td>{source.url ? <a className="text-indigo-600 hover:underline" href={source.url} target="_blank" rel="noreferrer">{source.url}</a> : "—"}</td>
       <td><div className="space-y-2"><Badge value={source.status} /><select aria-label={`Status for ${source.title}`} value={source.status} disabled={isPending} onChange={(event) => updateStatus(source, event.target.value as KnowledgeSourceStatus)} className="block rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"><option value="active">Active</option><option value="inactive">Inactive</option></select></div></td>

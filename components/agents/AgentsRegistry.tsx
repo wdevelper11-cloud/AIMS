@@ -86,7 +86,7 @@ export function AgentsRegistry({ initialAgents, projectId }: { initialAgents: Da
       {feedback && <p role="status" className={`rounded-lg border px-4 py-3 text-sm ${feedback.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>{feedback.message}</p>}
 
       {initialAgents.length === 0 ? (
-        <EmptyState title="No agents registered yet." description="Create your first agent." />
+        <EmptyState title="No agents registered yet" description="Register the first agent to document its operational role, model, lifecycle status, and risk classification." />
       ) : (
         <div className="table-shell">
           <table className="data-table">
