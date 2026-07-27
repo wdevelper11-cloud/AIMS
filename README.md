@@ -7,9 +7,7 @@ AIMS is designed for engineers and operators who need visibility around agent sy
 > **Project boundary:** AIMS records control-plane metadata and manually supplied run evidence. It does not execute agents, call an AI provider, ingest documents, or claim to be a production compliance system.
 
 ## Live Demo
-
-<!-- Add the confirmed Vercel production URL here when it is available. -->
-
+https://aims-gamma.vercel.app/
 A production URL could not be confirmed from this repository. The deployment link must be supplied manually rather than inferred from the project name.
 
 ## Product Screenshots
