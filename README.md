@@ -6,6 +6,34 @@ AIMS is designed for engineers and operators who need visibility around agent sy
 
 > **Project boundary:** AIMS records control-plane metadata and manually supplied run evidence. It does not execute agents, call an AI provider, ingest documents, or claim to be a production compliance system.
 
+## Live Demo
+
+<!-- Add the confirmed Vercel production URL here when it is available. -->
+
+A production URL could not be confirmed from this repository. The deployment link must be supplied manually rather than inferred from the project name.
+
+## Product Screenshots
+
+### Operations dashboard
+
+![AIMS operations dashboard with workspace metrics and recent run evidence](docs/screenshots/dashboard.png)
+
+### Agent registry
+
+![AIMS agent registry showing lifecycle and risk metadata](docs/screenshots/agents.png)
+
+### Run monitoring
+
+![AIMS run monitoring view with success, Needs Review, and failed evidence](docs/screenshots/run_monitoring.png)
+
+### Audit timeline
+
+![AIMS audit timeline combining recent operational activity](docs/screenshots/audit_timeline.png)
+
+### Knowledge-source governance
+
+![AIMS knowledge-source registry showing approved reference metadata](docs/screenshots/knowledge_sources.png)
+
 ## Problem
 
 As agent prototypes move into support, research, finance, and engineering workflows, teams need to answer practical operational questions: Which agents exist? What tools and knowledge sources may they use? Which runs failed or need review? What did an execution cost, how long did it take, and what changed recently?
@@ -63,6 +91,11 @@ The result is a coherent operational view of an agent fleet. All business record
 - Derive up to 50 recent events from agents, tools, knowledge sources, runs, and run steps
 - Combine and sort live project records without claiming an immutable compliance log
 
+### Error handling and project isolation
+
+- Protect operational routes, surface query and mutation failures, and keep empty workspaces honest
+- Scope reads and writes to the server-resolved project while RLS independently enforces ownership
+
 ## Tech stack
 
 | Layer | Technology |
@@ -99,6 +132,20 @@ Browser
 
 See [`docs/02_ARCHITECTURE.md`](docs/02_ARCHITECTURE.md) and [`docs/03_DATABASE_SCHEMA.md`](docs/03_DATABASE_SCHEMA.md) for deeper design notes. Executable SQL lives in [`supabase/schema.sql`](supabase/schema.sql).
 
+## Data model
+
+The executable schema contains seven public application tables; audit entries are derived from these records rather than stored in a separate audit table.
+
+| Table | Purpose |
+|---|---|
+| `profiles` | Application profile keyed to a Supabase Auth user |
+| `projects` | User-owned workspace and root of the authorization boundary |
+| `agents` | Agent identity, role, model label, lifecycle, and risk metadata |
+| `tools` | Governed capability catalog with approval and risk state |
+| `knowledge_sources` | Reference-source metadata and lifecycle state |
+| `agent_runs` | Manually recorded execution outcome, output, latency, cost, and risk evidence |
+| `agent_run_steps` | Optional ordered tool-step evidence associated with a run |
+
 ## Security and project isolation
 
 1. Supabase Auth identifies the user from the cookie-backed session.
@@ -110,30 +157,21 @@ See [`docs/02_ARCHITECTURE.md`](docs/02_ARCHITECTURE.md) and [`docs/03_DATABASE_
 
 This is an MVP security model, not a claim of formal audit, penetration testing, organization-level RBAC, or regulatory compliance.
 
-## Five-minute demo walkthrough
+## Demo Workflow
+
+This walkthrough takes approximately 3–5 minutes:
 
 1. **Landing (`/`):** explain that AIMS manages the operational layer around agents rather than executing them.
 2. **Login (`/login`):** create an account or sign in; note the cookie-backed session and automatic default workspace.
 3. **Dashboard (`/dashboard`):** orient the viewer to fleet health, governance counts, and recent runs.
-4. **Register agents (`/agents`):** add the support and research examples below with different risk profiles.
-5. **Register tools (`/tools`):** contrast an approved low-risk tool with an unapproved high-risk tool.
-6. **Register knowledge (`/knowledge`):** add metadata for a source the agents may reference; clarify that AIMS does not ingest its content.
-7. **Record execution evidence (`/runs`):** log a review-required support run with latency, estimated cost, output, and an approved-tool step.
-8. **Review operations (`/dashboard`, then `/audit`):** show updated metrics and close on the project-scoped chronological evidence.
+4. **Inspect agents (`/agents`):** review or register the Support Resolution, Ticket Classification, and Research Briefing agents.
+5. **Review governed resources (`/tools`, then `/knowledge`):** compare tool approval and risk, then inspect support-policy and troubleshooting source metadata.
+6. **Inspect execution evidence (`/runs`):** compare manually recorded success, Needs Review, and failed runs, including latency, estimated cost, output, risk, and optional tool steps.
+7. **Review operations (`/dashboard`, then `/audit`):** show updated metrics and close on the project-scoped chronological timeline.
 
-### Suggested demo data
+### Demo data summary
 
-| Module | Example | Values |
-|---|---|---|
-| Agent | Support Triage Agent | Role: `Classifies and routes customer requests`; model: `provider-model-label`; status: `active`; risk: `medium` |
-| Agent | Research Assistant | Role: `Synthesizes approved research sources`; model: `provider-model-label`; status: `active`; risk: `high` |
-| Tool | Web Search | Category: `Search`; approved: `yes`; risk: `low` |
-| Tool | Customer Database Write | Category: `Data`; approved: `no`; risk: `high` |
-| Knowledge | Support Playbook | Type: `Internal Docs`; URL: `https://example.com/support-playbook`; status: `active` |
-| Run | Classify refund request | Agent: Support Triage Agent; status: `needs_review`; risk: `high`; latency: `830 ms`; estimated cost: `$0.0124`; output: `Refund request classified as billing; human approval required.` |
-| Optional step | Search support policy | Tool: Web Search; status: `success`; input: `refund policy exception`; output: `Policy article located.` |
-
-These are manual demo records, not generated AI output or bundled seed data.
+The captured workspace tells one support-operations story: **Support Resolution Agent**, **Ticket Classification Agent**, and **Research Briefing Agent** are governed alongside **Customer Lookup API**, **Ticket Update Service**, and **Internal Knowledge Search**. Customer-support policy, refund/escalation, and troubleshooting sources supply metadata context, while manually entered runs demonstrate success, Needs Review, and failure paths. These records are demonstration evidence—not generated AI output or bundled seed data.
 
 ## Route map
 
@@ -199,6 +237,10 @@ npm run build
 
 A Vercel deployment can use the same two public environment variables. “Vercel-ready” describes the deployment target; this repository does not claim a verified live environment.
 
+## Testing and validation
+
+The repository defines `npm run lint` and `npm run build`; the production build also performs Next.js TypeScript validation. There is currently no dedicated `typecheck` script or automated `test` script, so the README does not claim a test suite that does not exist. A standalone local type check can be run with the installed compiler via `npx tsc --noEmit`.
+
 ## Resume Bullets
 
 - Built a Next.js and TypeScript AI agent operations control plane spanning 6 protected workflow pages for agent inventory, tool governance, knowledge tracking, execution evidence, metrics, and activity review.
@@ -215,6 +257,14 @@ Use only the bullets that match the role, and describe this as a portfolio MVP u
 ### Why this project matters
 
 Agent engineering is not only prompt and model work. Teams also need to know which systems can act, what capabilities are approved, and whether executions are reliable and reviewable. AIMS demonstrates that operational layer with an intentionally small domain model.
+
+### What makes it more than CRUD?
+
+The registries share a project ownership boundary and feed operational aggregates, execution-risk snapshots, governed tool-step relationships, and a derived cross-entity activity timeline. Relational constraints and RLS enforce invariants beyond the interface.
+
+### Authentication versus authorization
+
+Supabase Auth establishes who the user is; project ownership and table policies determine which rows that identity can access. A valid session alone does not authorize access to another project.
 
 ### Hardest technical decision
 
@@ -243,6 +293,10 @@ The engineering focus is the system around agent execution: inventory, approvals
 
 Add authenticated event ingestion, append-only audit storage, organization membership and RBAC, automated RLS integration tests, database-side time-window metrics, pagination, provider-specific token/cost calculation, alerts, and production observability. Real runtime adapters would follow only after defining secrets, retries, idempotency, and failure handling.
 
+### How could it scale?
+
+Move dashboard aggregation into indexed database views or RPCs, paginate run and audit queries, ingest telemetry asynchronously with idempotency keys, and partition or archive high-volume execution evidence. Organization membership and scoped ingestion credentials would extend the current single-owner model before broader runtime integration.
+
 More interview prompts and honest answer framing are available in [`docs/05_RESUME_NOTES.md`](docs/05_RESUME_NOTES.md).
 
 ## Limitations and future improvements
@@ -266,7 +320,7 @@ More interview prompts and honest answer framing are available in [`docs/05_RESU
 
 ## NotebookLM readiness
 
-For a later interview-prep phase, upload this README together with `docs/01_PRD.md`, `docs/02_ARCHITECTURE.md`, `docs/03_DATABASE_SCHEMA.md`, `docs/04_TASKS.md`, and `docs/05_RESUME_NOTES.md` to NotebookLM. Together they cover product intent, architecture, schema, implementation scope, resume language, and interview rationale. This repository intentionally does not include a generated NotebookLM interview pack yet.
+The README, `docs/`, `docs/interview-pack/`, schema files, and patches can be uploaded to NotebookLM for architecture review and interview preparation. Together they cover product intent, architecture, implementation scope, interview rationale, and the database authorization model.
 
 ## Documentation index
 
@@ -275,3 +329,4 @@ For a later interview-prep phase, upload this README together with `docs/01_PRD.
 - [`docs/03_DATABASE_SCHEMA.md`](docs/03_DATABASE_SCHEMA.md) — table and RLS reference
 - [`docs/04_TASKS.md`](docs/04_TASKS.md) — phased implementation record
 - [`docs/05_RESUME_NOTES.md`](docs/05_RESUME_NOTES.md) — extended resume and interview notes
+- [`docs/interview-pack/00_INTERVIEW_MASTER_GUIDE.md`](docs/interview-pack/00_INTERVIEW_MASTER_GUIDE.md) — entry point for the completed interview-preparation pack
